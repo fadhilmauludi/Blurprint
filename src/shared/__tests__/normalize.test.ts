@@ -105,3 +105,26 @@ describe('normalize', () => {
     expect(g).toEqual(copy);
   });
 });
+
+describe('stray taps', () => {
+  const block = (x0: number, y0: number, w: number, h: number): [number, number][] => {
+    const pts: [number, number][] = [];
+    for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) pts.push([x, y]);
+    return pts;
+  };
+  it('one stray tap in a corner does not shrink the shape', () => {
+    const shape = block(3, 3, 4, 4); // 16 cells
+    expect(normalize(fromPoints([...shape, [9, 9]]))).toEqual(normalize(fromPoints(shape)));
+  });
+  it('dotted drawings keep all their dots', () => {
+    const dots: [number, number][] = [[1, 1], [5, 1], [1, 5], [5, 5]];
+    const out = normalize(fromPoints(dots));
+    expect(out[idx(0, 0)]).toBe(true);
+    expect(out[idx(9, 9)]).toBe(true);
+  });
+  it('strays above the share limit are kept', () => {
+    const shape = block(0, 0, 2, 2); // 4 cells + 2 strays = 33%
+    const out = normalize(fromPoints([...shape, [9, 9], [9, 0]]));
+    expect(out[idx(9, 9)]).toBe(true);
+  });
+});

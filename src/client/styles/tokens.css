@@ -1,0 +1,25 @@
+/* Blurprint design tokens — "blueprint paper" (spec §6.1).
+   Contrast checked (WCAG AA ≥ 4.5:1) on both --bp-bg and --bp-bg-deep:
+   ink 10.0/13.7 · cyan 6.5/8.8 · amber 6.6/9.0 · green 7.9/10.8 · red 5.3/7.2 · muted 6.0/8.2
+   --bp-red is lightened from the spec's #FF6B6B (3.6:1, fails AA) — see docs/DECISIONS.md. */
+:root {
+  --bp-bg: #0b3d91;
+  --bp-bg-deep: #072a66;
+  --bp-line: rgba(255, 255, 255, 0.18);
+  --bp-line-faint: rgba(255, 255, 255, 0.07);
+  --bp-ink: #ffffff;
+  --bp-muted: #b8c9e8;
+  --bp-cyan: #7fdbff;
+  --bp-amber: #ffc94d;
+  --bp-red: #ffa3a3;
+  --bp-green: #6bffb0;
+
+  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+
+  --radius: 10px;
+  --gap: clamp(8px, 2.2dvh, 16px);
+  --pad: clamp(10px, 3vw, 20px);
+  --tap: 44px;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}

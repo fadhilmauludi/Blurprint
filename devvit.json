@@ -5,11 +5,19 @@
     "dir": "dist/client",
     "entrypoints": {
       "default": {
-        "inline": true,
-        "entry": "splash.html"
+        "entry": "splash.html",
+        "height": "tall",
+        "styles": {
+          "backgroundColor": "#0B3D91FF",
+          "backgroundColorDark": "#0B3D91FF"
+        }
       },
       "game": {
-        "entry": "game.html"
+        "entry": "game.html",
+        "styles": {
+          "backgroundColor": "#0B3D91FF",
+          "backgroundColorDark": "#0B3D91FF"
+        }
       }
     }
   },
@@ -17,26 +25,66 @@
     "dir": "dist/server",
     "entry": "index.cjs"
   },
+  "permissions": {
+    "redis": true,
+    "journeys": true,
+    "reddit": {
+      "enable": true,
+      "asUser": ["SUBSCRIBE_TO_SUBREDDIT"]
+    }
+  },
+  "scheduler": {
+    "tasks": {
+      "daily-rollover": {
+        "endpoint": "/internal/scheduler/daily-rollover",
+        "cron": "0 0 * * *"
+      },
+      "rollover-safety-net": {
+        "endpoint": "/internal/scheduler/daily-rollover",
+        "cron": "15 * * * *"
+      },
+      "purge-sweep": {
+        "endpoint": "/internal/scheduler/purge-sweep",
+        "cron": "37 * * * *"
+      }
+    }
+  },
   "menu": {
     "items": [
       {
-        "label": "Create a new post",
-        "description": "blurprint",
+        "label": "Blurprint: create today's post now",
+        "description": "Manual rollover / recovery",
         "location": "subreddit",
         "forUserType": "moderator",
-        "endpoint": "/internal/menu/post-create"
+        "endpoint": "/internal/menu/create-today"
       },
       {
-        "label": "Example form",
-        "description": "Show a simple form",
+        "label": "Blurprint: hide or show a day's blend",
+        "description": "For coordinated rude shapes",
         "location": "subreddit",
         "forUserType": "moderator",
-        "endpoint": "/internal/menu/example-form"
+        "endpoint": "/internal/menu/hide-blend"
+      },
+      {
+        "label": "Blurprint: load seed data",
+        "description": "Seed drawings for pre-launch days",
+        "location": "subreddit",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/load-seed"
+      },
+      {
+        "label": "Blurprint: reset launch epoch (dev)",
+        "description": "Makes today Day 1 — dev subreddits only",
+        "location": "subreddit",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/reset-epoch"
       }
     ]
   },
   "forms": {
-    "exampleForm": "/internal/form/example-submit"
+    "hideBlendForm": "/internal/form/hide-blend",
+    "seedForm": "/internal/form/seed",
+    "resetEpochForm": "/internal/form/reset-epoch"
   },
   "triggers": {
     "onAppInstall": "/internal/triggers/on-app-install"

@@ -1,0 +1,28 @@
+.draw-wrap {
+  position: absolute;
+  inset: 0;
+}
+.draw-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: 6px;
+  touch-action: none; /* never scroll the page while drawing */
+  cursor: crosshair;
+  box-shadow:
+    0 0 0 2px var(--bp-cyan),
+    0 10px 30px rgba(0, 0, 0, 0.3);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.draw-canvas.is-disabled {
+  cursor: default;
+  box-shadow: 0 0 0 2px var(--bp-line);
+}
+.draw-cursor {
+  position: absolute;
+  pointer-events: none;
+  outline: 3px solid var(--bp-amber);
+  outline-offset: -3px;
+  border-radius: 2px;
+}
