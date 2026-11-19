@@ -17,7 +17,9 @@
     "harness": "vite --config harness/vite.config.ts",
     "gate": "tsx tools/gate.ts",
     "seed:make": "tsx tools/make-seed.ts",
-    "prettier": "prettier --write ."
+    "prettier": "prettier --write .",
+    "demo": "vite --config standalone/vite.config.ts",
+    "demo:build": "vite build --config standalone/vite.config.ts && tsx standalone/inline.ts"
   },
   "engines": {
     "node": ">=22.2.0"
