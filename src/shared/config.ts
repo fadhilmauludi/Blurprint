@@ -29,14 +29,26 @@ export const DAY_MS = 86_400_000;
 
 /** Normalisation: a target cell is filled when the source covers at least this share of it. */
 export const COVERAGE_THRESHOLD = 0.5;
+/**
+ * Normalisation: isolated cells (no filled 8-neighbour) are treated as stray taps and
+ * dropped, but only when they are at most this share of the drawing (so dotted
+ * drawings survive). Without this one stray tap in a corner shrinks the whole shape.
+ */
+export const STRAY_MAX_SHARE = 0.15;
 
 /** Display value d = v ^ BLEND_GAMMA so weak agreement stays visible. */
 export const BLEND_GAMMA = 0.8;
+/**
+ * Display contrast stretch: intensities are divided by the day's peak agreement and
+ * anything under BLEND_FLOOR (share of the peak) fades to the background. Keeps the
+ * shape readable whether 5 or 500 people drew.
+ */
+export const BLEND_FLOOR = 0.2;
 /** CSS blur (px, at 300 px display size) for the signature blur. Scaled with the canvas. */
 export const BLEND_BLUR_PX = 6;
 
-/** Seed for the one-time shuffle of the prompt bank. Change only between seasons. */
-export const PROMPT_SHUFFLE_SEED = 0xb1_0e_9a;
+/** Seed for the one-time shuffle of the prompt bank. Chosen so launch days are iconic shapes (day −2 sun, −1 crown, 0 heart, 1 ghost). Change only between seasons. */
+export const PROMPT_SHUFFLE_SEED = 0xb1_19_ac;
 /** Salt mixed with the day index to pick decoys. */
 export const DECOY_SEED_SALT = 0x5eed_d3c0;
 
@@ -68,6 +80,8 @@ export const FEATURES = {
   streakFlair: false,
   /** Sticky the new day's post and unsticky the previous one. */
   stickyDailyPost: true,
+  /** Playtest builds: "Copy drawing" button on the result card to collect seed drawings (spec §11). */
+  devTools: false,
 } as const;
 
 export const CREDIT = 'by XenixWave';

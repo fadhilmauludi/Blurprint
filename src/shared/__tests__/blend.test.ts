@@ -51,3 +51,16 @@ describe('cosineSync', () => {
     expect(s).toBeLessThan(1);
   });
 });
+
+import { displayValues } from '../blend';
+describe('displayValues', () => {
+  it('stretches to the peak and floors weak agreement', () => {
+    const d = displayValues([0, 0.05, 0.3, 0.6], 0.2, 1);
+    expect(d[3]).toBe(1);
+    expect(d[1]).toBe(0); // 0.05/0.6 < floor
+    expect(d[2]).toBeCloseTo((0.5 - 0.2) / 0.8);
+  });
+  it('is all zeros for an empty blend', () => {
+    expect(displayValues([0, 0])).toEqual([0, 0]);
+  });
+});

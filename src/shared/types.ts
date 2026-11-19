@@ -97,8 +97,10 @@ export type InitResponse = {
   subredditName: string;
   /** null = logged out. */
   user: UserSummary | null;
-  /** Show first-time hints. */
+  /** Brand-new player (never played, no hints dismissed). */
   firstTime: boolean;
+  /** Hints this player already dismissed. */
+  seenHints: HintId[];
   phase: Phase;
   /** Present when phase = 'guess'. */
   guess?: GuessPayload;

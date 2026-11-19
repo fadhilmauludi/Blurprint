@@ -10,13 +10,16 @@
  *  - Empty input throws (callers must validate MIN_CELLS first).
  *  - A single filled cell is a 1×1 square, so it scales to fill the whole grid.
  *    The server never sees this case because MIN_CELLS = 3.
+ *  - Stray taps: isolated cells (no filled 8-neighbour) are dropped before
+ *    cropping when they are ≤ STRAY_MAX_SHARE of all filled cells and at least
+ *    2 cells remain. Otherwise (dotted drawings) every cell is kept.
  *  - Output always has ≥ 1 filled cell: if sampling leaves nothing above the
  *    threshold (very thin diagonal strokes), the best-covered cell is kept.
  *
  * The server runs this on every drawing (never trust the client). The client
  * runs the same function only to preview.
  */
-import { COVERAGE_THRESHOLD, GRID_SIZE } from './config';
+import { COVERAGE_THRESHOLD, GRID_SIZE, STRAY_MAX_SHARE } from './config';
 
 export type Grid = boolean[];
 
@@ -65,8 +68,37 @@ export const boundingBox = (grid: Grid, size = GRID_SIZE): BBox | null => {
 const overlap = (a0: number, a1: number, b0: number, b1: number): number =>
   Math.max(0, Math.min(a1, b1) - Math.max(a0, b0));
 
-export const normalize = (grid: Grid, size = GRID_SIZE, threshold = COVERAGE_THRESHOLD): Grid => {
-  if (grid.length !== size * size) throw new Error(`normalize: expected ${size * size} cells, got ${grid.length}`);
+/** Removes isolated cells when they are a small share of the drawing (see rule above). */
+export const dropStrays = (grid: Grid, size = GRID_SIZE, maxShare = STRAY_MAX_SHARE): Grid => {
+  const filled = grid.filter(Boolean).length;
+  const isolated: number[] = [];
+  for (let i = 0; i < grid.length; i++) {
+    if (!grid[i]) continue;
+    const x = i % size;
+    const y = Math.floor(i / size);
+    let hasNeighbour = false;
+    for (let dy = -1; dy <= 1 && !hasNeighbour; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (dx === 0 && dy === 0) continue;
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx >= 0 && ny >= 0 && nx < size && ny < size && grid[ny * size + nx]) {
+          hasNeighbour = true;
+          break;
+        }
+      }
+    }
+    if (!hasNeighbour) isolated.push(i);
+  }
+  if (isolated.length === 0 || isolated.length > filled * maxShare || filled - isolated.length < 2) return grid;
+  const out = grid.slice();
+  for (const i of isolated) out[i] = false;
+  return out;
+};
+
+export const normalize = (input: Grid, size = GRID_SIZE, threshold = COVERAGE_THRESHOLD): Grid => {
+  if (input.length !== size * size) throw new Error(`normalize: expected ${size * size} cells, got ${input.length}`);
+  const grid = dropStrays(input, size);
   const box = boundingBox(grid, size);
   if (!box) throw new Error('normalize: empty drawing');
 

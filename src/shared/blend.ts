@@ -1,7 +1,7 @@
 /**
  * Blend math (spec §4.4, §4.5 crowd sync).
  */
-import { BLEND_GAMMA, GRID_CELLS } from './config';
+import { BLEND_FLOOR, BLEND_GAMMA, GRID_CELLS } from './config';
 import type { Grid } from './normalize';
 
 /** Intensities v = count / total, 0..1. All zeros when total is 0. */
@@ -10,6 +10,19 @@ export const intensities = (counts: readonly number[], total: number): number[] 
 
 /** Display value d = v ^ gamma. */
 export const displayValue = (v: number, gamma = BLEND_GAMMA): number => (v <= 0 ? 0 : Math.pow(v, gamma));
+
+/**
+ * Display values for a whole blend: contrast-stretched to the peak, floored,
+ * then gamma'd. Returns 0..1 per cell.
+ */
+export const displayValues = (v: readonly number[], floor = BLEND_FLOOR, gamma = BLEND_GAMMA): number[] => {
+  const peak = v.reduce((m, x) => Math.max(m, x), 0);
+  if (peak <= 0) return v.map(() => 0);
+  return v.map((x) => {
+    const t = (x / peak - floor) / (1 - floor);
+    return displayValue(Math.min(1, Math.max(0, t)), gamma);
+  });
+};
 
 /** Turn a sparse Redis hash { cellIndex: count } into a dense array. Ignores junk fields. */
 export const countsFromHash = (hash: Record<string, string>, cells = GRID_CELLS): number[] => {
