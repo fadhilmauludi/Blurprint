@@ -1,27 +1,39 @@
-## Devvit React Starter
+# Blurprint
 
-A starter to build web applications on Reddit's developer platform
+A two-minute daily drawing game for Reddit where **the community makes the puzzle**.
+Everyone draws the same secret word on a 10×10 grid; drawings are never shown — they're
+lined up and averaged into one blurry "blurprint". Tomorrow, everyone guesses what the crowd drew.
 
-- [Devvit](https://developers.reddit.com/): A way to build and deploy immersive games on Reddit
-- [Vite](https://vite.dev/): For compiling the webView
-- [React](https://react.dev/): For UI
-- [Hono](https://hono.dev/): For backend logic
-- [Tailwind](https://tailwindcss.com/): For styles
-- [TypeScript](https://www.typescriptlang.org/): For type safety
+Built on **Devvit Web** for Reddit's Game of the Day Hackathon · by XenixWave.
 
-## Getting Started
+## Quick start
 
-> Make sure you have Node 22 downloaded on your machine before running!
+```bash
+npm install
+npm run check        # typecheck + lint + tests + build
+npm run harness      # local browser harness → http://localhost:5199/game.html?user=alice
+npm run login        # once, needs a Reddit account
+npm run dev          # playtest in your private test subreddit
+npm run upload       # private build — never `devvit publish` (hackathon rule)
+```
 
-1. Run `npm create devvit@latest --template=react`
-2. Go through the installation wizard. You will need to create a Reddit account and connect it to Reddit developers
-3. Copy the command on the success page into your terminal
+## Layout
 
-## Commands
+```
+src/shared/   game rules (pure, tested): normalize, blend, scoring, schedule, prompts, config, types
+src/server/   Hono server: routes/ (api, internal, telemetry), services/, redisKeys.ts, store.ts
+src/client/   React webview: splash.tsx (inline), game.tsx (expanded), components/, screens/
+harness/      local dev harness (mocks @devvit/web/client, in-memory Redis, seeded scenario)
+tools/        make-seed.ts (placeholder seed drawings), gate.ts (renders blends to PNG)
+docs/         SPRINTS, PROGRESS, DECISIONS, PLAYTEST, SUBMISSION
+```
 
-- `npm run dev`: Starts a development server where you can develop your application live on Reddit.
-- `npm run build`: Builds your client and server projects
-- `npm run deploy`: Uploads a new version of your app
-- `npm run launch`: Publishes your app for review
-- `npm run login`: Logs your CLI into Reddit
-- `npm run type-check`: Type checks, lints, and prettifies your app
+## Docs
+
+- [Sprint plan](docs/SPRINTS.md) · [Progress](docs/PROGRESS.md) · [Decisions](docs/DECISIONS.md)
+- [Playtest log](docs/PLAYTEST.md) · [Submission draft](docs/SUBMISSION.md)
+
+## Privacy
+
+Individual drawings are only ever shown to their author. Per-user data expires after 30 days,
+deleted accounts are purged hourly, and players can delete their data from the About sheet.
