@@ -65,6 +65,12 @@ const harnessApi = (): Plugin => {
       });
       const listener = getRequestListener(app.fetch);
       server.middlewares.use((req, res, next) => {
+        // The bare address opens the game as alice (handy for preview panes).
+        if (req.url === '/' || req.url === '/index.html') {
+          res.writeHead(302, { location: '/game.html?user=alice' });
+          res.end();
+          return;
+        }
         if (req.url?.startsWith('/api/') || req.url?.startsWith('/__harness/')) void listener(req, res);
         else next();
       });
