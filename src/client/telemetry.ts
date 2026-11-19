@@ -59,5 +59,9 @@ export const track = {
   cta: (kind: 'comment' | 'subscribe', day: number) =>
     safe(() => telemetry.interaction({ action: `cta_${kind}`, actionDetails: `day:${day}` })),
   streakMilestone: (streak: number) => safe(() => telemetry.interaction({ action: 'streak_milestone', actionDetails: `streak:${streak}` })),
-  leaderboardViewed: (tab: 'today' | 'all') => safe(() => telemetry.interaction({ action: 'leaderboard_viewed', actionDetails: `tab:${tab}` })),
+  guessStarted: (day: number, tier: number) =>
+    safe(() => telemetry.interaction({ action: 'guess_started', actionDetails: `day:${day};tier:${tier}` })),
+  duel: (kind: 'created' | 'invite_shared' | 'joined' | 'finished', detail = '') =>
+    safe(() => telemetry.interaction({ action: `duel_${kind}`, actionDetails: detail })),
+  leaderboardViewed: (tab: 'today' | 'streaks' | 'all') => safe(() => telemetry.interaction({ action: 'leaderboard_viewed', actionDetails: `tab:${tab}` })),
 };

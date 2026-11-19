@@ -11,11 +11,11 @@ type Props = {
   compact?: boolean;
 };
 
-/** 2×2 grid of big choice buttons. Correct/wrong always use an icon + text, never color alone. */
+/** Grid of big choice buttons (2 columns for 4, 3 columns for 5–6). Correct/wrong always use an icon + text, never color alone. */
 export const ChoiceButtons = ({ choices, onPick, disabled, answerId, pickedId, pendingId, compact }: Props) => {
   const revealed = answerId !== undefined && answerId !== null;
   return (
-    <div className={`choices${compact ? ' is-compact' : ''}`} role="group" aria-label="Choices">
+    <div className={`choices n-${choices.length}${compact ? ' is-compact' : ''}`} role="group" aria-label="Choices">
       {choices.map((c) => {
         const isAnswer = revealed && c.id === answerId;
         const isWrongPick = revealed && c.id === pickedId && c.id !== answerId;

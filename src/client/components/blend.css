@@ -129,3 +129,7 @@
   color: var(--bp-muted);
   font-size: 14px;
 }
+/* Focus pull drives the blur every frame; a long transition would lag behind it. */
+.blend-canvas.is-pulling {
+  transition: filter 120ms linear;
+}

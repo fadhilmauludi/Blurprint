@@ -59,6 +59,12 @@ export const recordDrawDay = async (
   return { prev, next };
 };
 
+/** Put the player's streak (after today's drawing) on today's streak board. */
+export const recordStreakBoard = async ({ store }: Deps, userId: string, today: DayIndex, streak: number): Promise<void> => {
+  await store.zAdd(keys.lbStreakDay(today), { member: userId, score: streak });
+  await store.expire(keys.lbStreakDay(today), USER_DAY_TTL_SECONDS + DAY_MS / 1000);
+};
+
 /** The player's normalized drawing cells for a day ([] if none / timed out). */
 export const getMyCells = async ({ store }: Deps, day: DayIndex, userId: string | undefined): Promise<number[] | null> => {
   if (!userId) return null;
@@ -89,11 +95,17 @@ export const forgetUser = async (deps: Deps, userId: string, today: DayIndex): P
     await Promise.all([
       store.hDel(keys.dayDrawings(d), [userId]),
       store.hDel(keys.dayGuesses(d), [userId]),
+      store.hDel(keys.dayGuessStarts(d), [userId]),
+      store.zRem(keys.lbStreakDay(d), [userId]),
       store.hDel(keys.daySyncs(d), [userId]),
       store.zRem(keys.lbDay(d), [userId]),
     ]);
   }
+  // Duels they took part in (both players' copies go: a duel is one shared record).
+  const duelIds = ((await store.hGet(keys.user(userId), 'duels')) ?? '').split(',').filter(Boolean);
   await Promise.all([
+    ...duelIds.map((id) => store.del(keys.duel(id))),
+    store.hDel(keys.duelInvites(), [userId]),
     store.zRem(keys.lbAll(), [userId]),
     store.hDel(keys.usernames(), [userId]),
     store.del(keys.user(userId)),

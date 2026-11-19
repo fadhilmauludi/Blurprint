@@ -20,8 +20,65 @@ export const MAX_CELLS = 70;
 
 /** Below this many drawings a blend is never shown publicly. */
 export const MIN_BLEND_DRAWINGS = 5;
-/** 1 correct + 3 decoys. */
+/** 1 correct + 3 decoys (tier 1). Later tiers show more — see DIFFICULTY_TIERS. */
 export const GUESS_CHOICES = 4;
+/** Every prompt group has 6 members, so 6 is the most choices a guess can offer. */
+export const MAX_GUESS_CHOICES = 6;
+
+/**
+ * Progressive difficulty (D-19). The tier is chosen by the post's day, so every
+ * player faces the same puzzle on the same day (fair leaderboards).
+ *  - choices: how many options (the answer + same-silhouette decoys)
+ *  - guessSeconds: the guess clock. The blend starts at startBlur × the normal
+ *    blur and pulls into focus over the clock ("focus pull"), so fast guessers
+ *    read a blurrier picture and earn more.
+ *  - multiplier: applied to the correct-guess points.
+ */
+export type DifficultyTier = {
+  level: 1 | 2 | 3 | 4;
+  name: string;
+  /** First post day of this tier. */
+  fromDay: number;
+  choices: number;
+  guessSeconds: number;
+  startBlur: number;
+  multiplier: number;
+};
+export const DIFFICULTY_TIERS: readonly DifficultyTier[] = [
+  { level: 1, name: 'Warm-up', fromDay: Number.NEGATIVE_INFINITY, choices: 4, guessSeconds: 20, startBlur: 5, multiplier: 1 },
+  { level: 2, name: 'Tricky', fromDay: 4, choices: 5, guessSeconds: 16, startBlur: 5.5, multiplier: 1.25 },
+  { level: 3, name: 'Hard', fromDay: 8, choices: 6, guessSeconds: 13, startBlur: 6, multiplier: 1.5 },
+  { level: 4, name: 'Expert', fromDay: 15, choices: 6, guessSeconds: 10, startBlur: 6.5, multiplier: 2 },
+];
+/** Network allowance on top of the guess clock before a guess counts as timed out. */
+export const GUESS_GRACE_MS = 2500;
+/** A correct guess at the very last moment still earns this share of the points. */
+export const MIN_SPEED_FACTOR = 0.5;
+/** Before the clock starts, the blend is shown averaged over TEASER_BLOCK² cells (splash + pre-start). */
+export const TEASER_BLOCK = 2;
+
+/**
+ * Duels (D-22): 5 rounds that get harder each round. Blends come from past days
+ * (never yesterday's, which is today's daily puzzle) and the seed bank.
+ */
+export type DuelRoundSpec = { choices: number; seconds: number; startBlur: number };
+export const DUEL_ROUNDS: readonly DuelRoundSpec[] = [
+  { choices: 4, seconds: 12, startBlur: 5 },
+  { choices: 4, seconds: 11, startBlur: 5.5 },
+  { choices: 5, seconds: 10, startBlur: 6 },
+  { choices: 6, seconds: 9, startBlur: 6.5 },
+  { choices: 6, seconds: 8, startBlur: 7 },
+];
+/** Points for a correct duel round, before the speed factor. */
+export const DUEL_ROUND_POINTS = 100;
+/** Duels (and their user ids) are deleted after this many days. */
+export const DUEL_TTL_DAYS = 7;
+/** After this long, unplayed rounds count as missed and the duel is settled. */
+export const DUEL_SETTLE_HOURS = 24;
+/** Anti-spam: duels one player may create per game day. */
+export const DUEL_CREATES_PER_DAY = 10;
+/** Duel screen refresh while waiting for the opponent (realtime nudges make it instant when available). */
+export const DUEL_POLL_MS = 4000;
 
 /** New day at 00:00 UTC (= 07:00 WIB). */
 export const ROLLOVER_UTC_HOUR = 0;
@@ -73,6 +130,8 @@ export const USER_DAY_TTL_DAYS = 30;
 
 /** How many leaderboard rows to show. */
 export const LEADERBOARD_SIZE = 5;
+/** "Yesterday's winners" podium size. */
+export const PODIUM_SIZE = 3;
 
 /** Feature flags (off by default; see docs/DECISIONS.md). */
 export const FEATURES = {

@@ -54,3 +54,26 @@ export const cosineSync = (drawing: Grid, v: readonly number[]): number => {
   if (nd === 0 || nv === 0) return 0;
   return Math.min(1, Math.max(0, dot / (Math.sqrt(nd) * Math.sqrt(nv))));
 };
+
+/**
+ * Teaser: average the blend over block×block squares (same GRID² length), so the
+ * picture before the guess clock starts shows rough mass, not the shape.
+ */
+export const coarsen = (v: readonly number[], block: number, size = Math.round(Math.sqrt(v.length))): number[] => {
+  if (block <= 1) return v.slice();
+  const out = new Array<number>(size * size).fill(0);
+  for (let by = 0; by < size; by += block)
+    for (let bx = 0; bx < size; bx += block) {
+      let sum = 0;
+      let n = 0;
+      for (let y = by; y < Math.min(size, by + block); y++)
+        for (let x = bx; x < Math.min(size, bx + block); x++) {
+          sum += v[y * size + x] ?? 0;
+          n++;
+        }
+      const avg = n > 0 ? sum / n : 0;
+      for (let y = by; y < Math.min(size, by + block); y++)
+        for (let x = bx; x < Math.min(size, bx + block); x++) out[y * size + x] = avg;
+    }
+  return out;
+};

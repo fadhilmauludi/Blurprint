@@ -1,4 +1,4 @@
-import { context, reddit } from '@devvit/web/server';
+import { context, realtime, reddit } from '@devvit/web/server';
 import { isT2, isT3 } from '@devvit/web/shared';
 import type { Platform } from './deps';
 
@@ -32,5 +32,8 @@ export const devvitPlatform: Platform = {
   async userExists(userId) {
     if (!isT2(userId)) return true;
     return (await reddit.getUserById(userId)) !== undefined;
+  },
+  async publish(channel, msg) {
+    await realtime.send(channel, msg);
   },
 };

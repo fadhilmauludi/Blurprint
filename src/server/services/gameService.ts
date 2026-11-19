@@ -2,29 +2,44 @@
  * The daily loop (spec §3): init, guess, skip-guess, draw, lazy crowd sync.
  * Every rule that decides what a player may see lives here, server side.
  */
-import { cosineSync } from '../../shared/blend';
-import { DRAW_SECONDS, FEATURES, GRID_CELLS, GRID_SIZE, MAX_CELLS, MIN_BLEND_DRAWINGS, MIN_CELLS } from '../../shared/config';
+import { coarsen, cosineSync } from '../../shared/blend';
+import {
+  DRAW_SECONDS,
+  FEATURES,
+  GRID_CELLS,
+  GRID_SIZE,
+  MAX_CELLS,
+  MIN_BLEND_DRAWINGS,
+  MIN_CELLS,
+  TEASER_BLOCK,
+  type DifficultyTier,
+} from '../../shared/config';
+import { isLate, tierForDay, timedPoints } from '../../shared/difficulty';
 import { bitsToGrid, gridToBits, gridToIndices, indicesToGrid, normalize } from '../../shared/normalize';
 import { choicesForDay, nextRolloverMs, promptForDay } from '../../shared/schedule';
-import { drawDayPoints, guessPoints, milestoneReached, syncBonus } from '../../shared/scoring';
+import { drawDayPoints, milestoneReached, syncBonus } from '../../shared/scoring';
 import type {
   BlendPayload,
   DayIndex,
   DrawPayload,
   DrawRequest,
+  GuessPayload,
   GuessRequest,
   GuessResponse,
+  GuessStartResponse,
   InitResponse,
   ResultPayload,
   RevealPayload,
   SkipGuessResponse,
   SplashResponse,
+  TierInfo,
 } from '../../shared/types';
 import { ApiFail, type Deps, type Who } from '../deps';
 import { DRAWING_TIMEOUT, keys } from '../redisKeys';
 import { getBlend, getDayPostId, getPostDay, getToday } from './dayService';
+import { getPendingDuel } from './duelService';
 import { addPoints, getLeaderboard, scoreForDay } from './leaderboardService';
-import { USER_DAY_TTL_SECONDS, getMyCells, getUserState, recordDrawDay, userSummary } from './userService';
+import { USER_DAY_TTL_SECONDS, getMyCells, getUserState, recordDrawDay, recordStreakBoard, userSummary } from './userService';
 
 export type PostRef = { postId: string | undefined; postData: unknown; subredditName: string };
 
@@ -49,10 +64,54 @@ const drawPayload = (day: DayIndex): DrawPayload => ({
   grid: GRID_SIZE,
 });
 
-const parseGuess = (raw: string | undefined): { pickedId: string; correct: boolean } | null => {
-  if (!raw) return null;
-  const [pickedId, flag] = raw.split('|');
-  return pickedId ? { pickedId, correct: flag === '1' } : null;
+export const tierInfo = (t: DifficultyTier): TierInfo => ({
+  level: t.level,
+  name: t.name,
+  choices: t.choices,
+  guessSeconds: t.guessSeconds,
+  startBlur: t.startBlur,
+  multiplier: t.multiplier,
+});
+
+type StoredGuess = { pickedId: string | null; correct: boolean; points: number; elapsedMs: number | null };
+
+/** Stored as "{choiceId}|{0|1}|{points}|{elapsedMs}"; choiceId '' = the clock ran out. */
+const encodeGuess = (g: StoredGuess): string => `${g.pickedId ?? ''}|${g.correct ? 1 : 0}|${g.points}|${g.elapsedMs ?? ''}`;
+
+const parseGuess = (raw: string | undefined): StoredGuess | null => {
+  if (raw === undefined || raw === '') return null;
+  const [pickedId, flag, points, elapsed] = raw.split('|');
+  const n = (x: string | undefined) => (x === undefined || x === '' || !Number.isFinite(Number(x)) ? null : Number(x));
+  return { pickedId: pickedId ? pickedId : null, correct: flag === '1', points: n(points) ?? 0, elapsedMs: n(elapsed) };
+};
+
+/** The guess screen payload: a coarse teaser before the clock starts, the real blend after. */
+const buildGuessPayload = async (
+  deps: Deps,
+  who: Who,
+  postDay: DayIndex,
+  blend: BlendPayload
+): Promise<GuessPayload> => {
+  const tier = tierForDay(postDay);
+  const blendDay = postDay - 1;
+  const startRaw = who.userId ? await deps.store.hGet(keys.dayGuessStarts(blendDay), who.userId) : undefined;
+  const startedAt = startRaw === undefined ? null : Number(startRaw);
+  if (startedAt === null || !Number.isFinite(startedAt) || !blend.values) {
+    return {
+      blend: { ...blend, values: blend.values ? coarsen(blend.values, TEASER_BLOCK, GRID_SIZE) : null },
+      choices: null,
+      tier: tierInfo(tier),
+      started: false,
+      remainingMs: null,
+    };
+  }
+  return {
+    blend,
+    choices: choicesForDay(blendDay, tier.choices),
+    tier: tierInfo(tier),
+    started: true,
+    remainingMs: Math.max(0, tier.guessSeconds * 1000 - (deps.now() - startedAt)),
+  };
 };
 
 /**
@@ -100,6 +159,7 @@ const buildReveal = async (
   const guess = parseGuess(guessRaw);
   const hasBlend = blend.values !== null;
   const answer = promptForDay(blendDay);
+  const tier = tierForDay(blendDay + 1);
   const total = Number(stats.total ?? 0);
   const correctCount = Number(stats.correct ?? 0);
   // The answer is shown once the player guessed, or when there was nothing to guess
@@ -110,12 +170,15 @@ const buildReveal = async (
     pickedId: guess?.pickedId ?? null,
     answerId: showAnswer ? answer.id : null,
     answerWord: showAnswer ? answer.word : null,
-    choices: guess ? choicesForDay(blendDay) : null,
+    choices: guess ? choicesForDay(blendDay, tier.choices) : null,
     pctCorrect: guess && total > 0 ? Math.round((correctCount / total) * 100) : null,
     blend: hasBlend ? blend : null,
     syncPct: sync ? Math.round(sync.sync * 100) : null,
     syncBonus: sync?.bonus ?? 0,
-    pointsEarned: live && guess ? guessPoints(guess.correct) : 0,
+    pointsEarned: live && guess ? guess.points : 0,
+    timedOut: guess !== null && guess.pickedId === null,
+    elapsedMs: guess?.elapsedMs ?? null,
+    tier: hasBlend ? tierInfo(tier) : null,
   };
 };
 
@@ -152,10 +215,11 @@ export const init = async (deps: Deps, who: Who, post: PostRef): Promise<InitRes
   const blendDay = postDay - 1;
   const live = !isArchive;
 
-  const [sync, state, todayPostId] = await Promise.all([
+  const [sync, state, todayPostId, pendingDuelId] = await Promise.all([
     live ? awardSyncIfDue(deps, who, today) : Promise.resolve(null),
     who.userId ? getUserState(deps, who.userId) : Promise.resolve(null),
     isArchive ? getDayPostId(deps, today) : Promise.resolve(post.postId ?? null),
+    getPendingDuel(deps, who),
   ]);
 
   const base = {
@@ -168,6 +232,8 @@ export const init = async (deps: Deps, who: Who, post: PostRef): Promise<InitRes
     firstTime: state ? state.daysPlayed === 0 && state.seenHints.length === 0 : true,
     seenHints: state?.seenHints ?? [],
     nextRolloverUtcMs: nextRolloverMs(deps.now()),
+    tier: tierInfo(tierForDay(postDay)),
+    pendingDuelId,
   };
 
   const blend = await getBlend(deps, blendDay);
@@ -175,7 +241,7 @@ export const init = async (deps: Deps, who: Who, post: PostRef): Promise<InitRes
   const needsGuess = blend.values !== null && guessRaw === undefined;
 
   if (needsGuess) {
-    return { ...base, phase: 'guess', guess: { blend, choices: choicesForDay(blendDay) } };
+    return { ...base, phase: 'guess', guess: await buildGuessPayload(deps, who, postDay, blend) };
   }
 
   const reveal = await buildReveal(deps, who, blendDay, live, sync);
@@ -195,20 +261,44 @@ export const init = async (deps: Deps, who: Who, post: PostRef): Promise<InitRes
   return { ...base, phase: 'draw', reveal, draw: drawPayload(postDay) };
 };
 
+/** Start the guess clock (idempotent: a reload keeps the original start). Returns the real blend + choices. */
+export const startGuess = async (deps: Deps, who: Who, post: PostRef, day: unknown): Promise<GuessStartResponse> => {
+  const userId = requireUser(who);
+  const { postDay } = await resolveDay(deps, post);
+  const blendDay = postDay - 1;
+  if (day !== blendDay) throw new ApiFail('BAD_INPUT', 'That guess is for a different day.');
+  const blend = await getBlend(deps, blendDay);
+  if (!blend.values) throw new ApiFail('WRONG_PHASE', 'There is no blend to guess today.');
+  if ((await deps.store.hGet(keys.dayGuesses(blendDay), userId)) !== undefined) {
+    throw new ApiFail('ALREADY_DONE', 'You already guessed this one.');
+  }
+  await deps.store.hSetNX(keys.dayGuessStarts(blendDay), userId, String(deps.now()));
+  await deps.store.expire(keys.dayGuessStarts(blendDay), USER_DAY_TTL_SECONDS);
+  return { guess: await buildGuessPayload(deps, who, postDay, blend) };
+};
+
 export const guess = async (deps: Deps, who: Who, post: PostRef, req: GuessRequest): Promise<GuessResponse> => {
   const userId = requireUser(who);
   const { postDay, today, isArchive } = await resolveDay(deps, post);
   const blendDay = postDay - 1;
   if (!req || req.day !== blendDay) throw new ApiFail('BAD_INPUT', 'That guess is for a different day.');
-  const choices = choicesForDay(blendDay);
-  if (typeof req.choiceId !== 'string' || !choices.some((c) => c.id === req.choiceId)) {
+  const tier = tierForDay(postDay);
+  const choices = choicesForDay(blendDay, tier.choices);
+  if (req.choiceId !== null && (typeof req.choiceId !== 'string' || !choices.some((c) => c.id === req.choiceId))) {
     throw new ApiFail('BAD_INPUT', 'Unknown choice.');
   }
   const blend = await getBlend(deps, blendDay);
   if (!blend.values) throw new ApiFail('WRONG_PHASE', 'There is no blend to guess today.');
 
-  const correct = req.choiceId === promptForDay(blendDay).id;
-  const claimed = await deps.store.hSetNX(keys.dayGuesses(blendDay), userId, `${req.choiceId}|${correct ? 1 : 0}`);
+  const startRaw = await deps.store.hGet(keys.dayGuessStarts(blendDay), userId);
+  if (startRaw === undefined) throw new ApiFail('WRONG_PHASE', 'Start the clock first.');
+  const elapsedMs = Math.max(0, deps.now() - Number(startRaw));
+  const timedOut = req.choiceId === null || isLate(elapsedMs, tier.guessSeconds);
+  const correct = !timedOut && req.choiceId === promptForDay(blendDay).id;
+  const points = timedPoints(correct, elapsedMs, tier.guessSeconds, tier.multiplier);
+
+  const record = encodeGuess({ pickedId: timedOut ? null : req.choiceId, correct, points, elapsedMs });
+  const claimed = await deps.store.hSetNX(keys.dayGuesses(blendDay), userId, record);
   if (claimed === 0) throw new ApiFail('ALREADY_DONE', 'You already guessed this one.');
   await deps.store.expire(keys.dayGuesses(blendDay), USER_DAY_TTL_SECONDS);
 
@@ -217,7 +307,7 @@ export const guess = async (deps: Deps, who: Who, post: PostRef, req: GuessReque
     await Promise.all([
       deps.store.hIncrBy(keys.dayGuessStats(blendDay), 'total', 1),
       correct ? deps.store.hIncrBy(keys.dayGuessStats(blendDay), 'correct', 1) : Promise.resolve(0),
-      addPoints(deps, userId, who.username, today, guessPoints(correct)),
+      points > 0 ? addPoints(deps, userId, who.username, today, points) : Promise.resolve(),
     ]);
   }
 
@@ -298,7 +388,10 @@ export const draw = async (
   ]);
 
   const { prev, next } = await recordDrawDay(deps, userId, today);
-  await addPoints(deps, userId, who.username, today, drawDayPoints(next.streak));
+  await Promise.all([
+    addPoints(deps, userId, who.username, today, drawDayPoints(next.streak)),
+    recordStreakBoard(deps, userId, today, next.streak),
+  ]);
   const prevStreak = prev.lastPlayedDay !== null && prev.lastPlayedDay >= today - 1 ? prev.streak : 0;
   const milestone = milestoneReached(prevStreak, next.streak);
 
@@ -331,7 +424,8 @@ export const splash = async (deps: Deps, who: Who, post: PostRef): Promise<Splas
   return {
     postDay,
     isArchive,
-    blend: blend.values ? blend : null,
+    // Feed view: only the coarse teaser, so the guess clock is the first real look.
+    blend: blend.values ? { ...blend, values: coarsen(blend.values, TEASER_BLOCK, GRID_SIZE) } : null,
     players: blend.total,
     doneToday: drewRaw !== undefined,
     streak: state ? userSummary(who, state, today).streak : 0,

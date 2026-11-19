@@ -5,6 +5,7 @@ import { DrawGrid, type DrawGridHandle, type Tool } from '../components/DrawGrid
 import { Hint } from '../components/Hint';
 import { TimerBar } from '../components/TimerBar';
 import { useReducedMotion } from '../hooks/useReducedMotion';
+import { sfx } from '../audio';
 
 type Props = {
   draw: DrawPayload;
@@ -32,8 +33,10 @@ export const DrawScreen = ({ draw, showHint, onDismissHint, onStart, onSubmit, s
   // 3-2-1 countdown, then the timer starts.
   useEffect(() => {
     if (stage !== 'countdown') return;
+    sfx.play('tick');
     const id = setTimeout(() => {
       if (tick <= 1) {
+        sfx.play('go');
         setStage('drawing');
         onStart();
       } else setTick(tick - 1);
@@ -72,6 +75,7 @@ export const DrawScreen = ({ draw, showHint, onDismissHint, onStart, onSubmit, s
             tool={tool}
             disabled={!drawingOpen}
             onChange={(n, u) => {
+              if (n !== count) sfx.play('paint');
               setCount(n);
               setCanUndo(u);
               if (n < MAX_CELLS) setLimitNote(false);

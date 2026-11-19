@@ -31,7 +31,9 @@ const harnessApi = (): Plugin => {
     configureServer(server) {
       const app = new Hono();
       app.post('/__harness/reset', async (c) => {
-        harness = await buildScenario();
+        const t = Number(c.req.query('today') ?? 2);
+        harness = await buildScenario(Number.isInteger(t) && t >= 2 ? t : 2);
+        todayCache = await getToday(harness.deps);
         return c.json({ ok: true });
       });
       app.all('/api/*', async (c, next) => {

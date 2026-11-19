@@ -1,0 +1,270 @@
+/* Sprint 6: difficulty, audio, leaderboards, duels. Uses the tokens in styles/tokens.css. */
+
+/* ── Top bar ──────────────────────────────────────────────────────────── */
+.topbar-left,
+.topbar-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.icon-btn {
+  /* 44 px target that doesn't grow the 28 px bar. */
+  width: var(--tap);
+  height: var(--tap);
+  margin: -8px -10px -8px 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  font-size: 17px;
+  cursor: pointer;
+  display: inline-grid;
+  place-items: center;
+}
+.icon-btn:active {
+  background: rgba(255, 255, 255, 0.12);
+}
+.tier-badge {
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.tier-1 {
+  color: var(--bp-green);
+}
+.tier-2 {
+  color: var(--bp-cyan);
+}
+.tier-3 {
+  color: var(--bp-amber);
+}
+.tier-4 {
+  color: var(--bp-red);
+}
+.tier-rules {
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+/* ── Guess ────────────────────────────────────────────────────────────── */
+.teaser-tag {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(7, 42, 102, 0.85);
+  border: 1px solid var(--bp-line);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--bp-muted);
+  pointer-events: none;
+}
+.choices.n-5,
+.choices.n-6 {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.choices.n-5 .choice,
+.choices.n-6 .choice {
+  font-size: clamp(14px, 2.2dvh, 17px);
+  padding: 0 4px;
+  min-height: clamp(46px, 7dvh, 58px);
+  overflow-wrap: anywhere;
+}
+.choices.is-compact.n-5 .choice,
+.choices.is-compact.n-6 .choice {
+  min-height: var(--tap);
+  font-size: 14px;
+}
+.reveal-meta {
+  margin: 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--bp-muted);
+}
+
+/* ── Leaderboards ─────────────────────────────────────────────────────── */
+.podium {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--bp-line);
+}
+.podium-title {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--bp-muted);
+  margin-bottom: 4px;
+}
+.podium-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: 14px;
+}
+.podium-list li {
+  display: inline-flex;
+  gap: 4px;
+  align-items: baseline;
+  min-width: 0;
+}
+.podium-list li.is-me .podium-name {
+  color: var(--bp-cyan);
+}
+.podium-name {
+  max-width: 11ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lb-note {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--bp-muted);
+}
+.cta-row .btn {
+  padding-left: 6px;
+  padding-right: 6px;
+  white-space: nowrap;
+}
+
+/* ── Duels ────────────────────────────────────────────────────────────── */
+.duel-board {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: stretch;
+  gap: 8px;
+}
+.duel-vs {
+  align-self: center;
+  color: var(--bp-muted);
+  font-weight: 700;
+}
+.duel-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--bp-line);
+  background: rgba(7, 42, 102, 0.85);
+  min-width: 0;
+}
+.duel-card.is-me {
+  border-color: var(--bp-cyan);
+}
+.duel-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+.duel-score {
+  font-size: clamp(26px, 5dvh, 40px);
+  font-weight: 700;
+  line-height: 1;
+}
+.duel-marks {
+  display: inline-flex;
+  gap: 4px;
+}
+.duel-mark {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid var(--bp-line);
+}
+.duel-mark.is-right {
+  color: var(--bp-green);
+  border-color: var(--bp-green);
+}
+.duel-mark.is-miss {
+  color: var(--bp-red);
+  border-color: var(--bp-red);
+}
+.duel-mark.is-open {
+  color: var(--bp-muted);
+}
+.duel-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--bp-muted);
+}
+.duel-round-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--bp-muted);
+}
+.duel-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.duel-wins {
+  margin: 0 0 4px;
+  color: var(--bp-amber);
+  font-weight: 700;
+}
+.duel-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 10px;
+  min-height: var(--tap);
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--bp-line);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--bp-ink);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.duel-row-name {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.duel-row-status {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  color: var(--bp-muted);
+}
+
+/* ── Splash duel invite ───────────────────────────────────────────────── */
+.splash-invite {
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--bp-amber);
+  color: var(--bp-amber);
+  font-weight: 700;
+  text-align: center;
+}
+.heading-compact {
+  font-size: clamp(16px, 2.4dvh, 19px);
+}

@@ -48,3 +48,19 @@ export const getWebViewMode = () => (location.pathname.includes('splash') ? 'inl
 export const navigateTo = (url: string | { url: string }) => banner(`navigateTo → ${typeof url === 'string' ? url : url.url}`);
 export const showToast = (t: string | Toast) => banner(typeof t === 'string' ? t : t.text);
 export const showLoginPrompt = () => banner('showLoginPrompt()');
+
+/** ?duel=<id> simulates opening a duel invite link. */
+export const getShareData = (): string | undefined => {
+  const id = params.get('duel');
+  return id ? JSON.stringify({ t: 'duel', id }) : undefined;
+};
+export const showShareSheet = async (opts: { data?: string; title?: string; text?: string }) => {
+  Object.assign(window, { __lastShare: opts });
+  banner(`showShareSheet → ${opts.data ?? ''}`);
+};
+/** Realtime is not simulated locally: the duel screen falls back to polling. */
+export const connectRealtime = (opts: { channel: string }) => {
+  Object.assign(window, { __realtimeChannel: opts.channel });
+  return { disconnect: async () => undefined };
+};
+export const disconnectRealtime = (_channel: string) => undefined;

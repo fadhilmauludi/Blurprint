@@ -4,13 +4,14 @@ import { BLEND_POLL_MS, CREDIT, FEATURES, MIN_BLEND_DRAWINGS } from '../../share
 import type { BlendPayload, LeaderboardPayload, ResultPayload, RevealPayload } from '../../shared/types';
 import { api } from '../api';
 import { BlendCanvas } from '../components/BlendCanvas';
-import { Leaderboard } from '../components/Leaderboard';
+import { sfx } from '../audio';
+import { Leaderboard, Podium } from '../components/Leaderboard';
 import { formatCountdown, useNow } from '../hooks/useNow';
 import { usePolling } from '../hooks/usePolling';
 import { track } from '../telemetry';
 import { AboutSheet } from './AboutSheet';
 
-type Tab = 'blend' | 'today' | 'all';
+type Tab = 'blend' | 'today' | 'streaks' | 'all';
 
 type Props = {
   result: ResultPayload;
@@ -24,6 +25,7 @@ type Props = {
   /** Raw cells of the drawing just submitted (dev export only). */
   rawCells: number[] | null;
   onForgotten: () => void;
+  onDuel: () => void;
 };
 
 const postUrl = (sub: string, postId: string | null) =>
@@ -40,6 +42,7 @@ export const ResultScreen = ({
   timedOutNote,
   rawCells,
   onForgotten,
+  onDuel,
 }: Props) => {
   const [blend, setBlend] = useState<BlendPayload>(result.liveBlend);
   const [board, setBoard] = useState<LeaderboardPayload>(result.leaderboard);
@@ -52,6 +55,7 @@ export const ResultScreen = ({
     track.resultViewed(day, result.streak, Boolean(reveal?.correct) || result.drew, result.scoreToday);
     if (result.streakMilestone) {
       track.streakMilestone(result.streakMilestone);
+      sfx.play('milestone');
       showToast({ text: `🔥 ${result.streakMilestone}-day streak! Keep it going tomorrow.`, appearance: 'success' });
     }
     // Only once per mount.
@@ -117,8 +121,9 @@ export const ResultScreen = ({
       <div className="tabs" role="tablist" aria-label="Result view">
         {(
           [
-            ['blend', isArchive ? `Day ${day} blend` : 'Live blend'],
-            ['today', isArchive ? `Day ${day}` : 'Today'],
+            ['blend', isArchive ? `Day ${day}` : 'Blend'],
+            ['today', isArchive ? 'Scores' : 'Today'],
+            ['streaks', '🔥 Streaks'],
             ['all', 'All-time'],
           ] as const
         ).map(([id, label]) => (
@@ -140,9 +145,12 @@ export const ResultScreen = ({
             />
           ) : (
             <div className="lb-panel panel" role="tabpanel">
+              {tab === 'today' ? <Podium entries={board.yesterday} /> : null}
+              {tab === 'streaks' ? <p className="lb-note">Longest streaks among today’s artists</p> : null}
               <Leaderboard
-                entries={tab === 'today' ? board.today : board.allTime}
-                emptyText={tab === 'today' ? 'No scores yet today.' : 'No scores yet.'}
+                entries={tab === 'today' ? board.today : tab === 'streaks' ? board.streaks : board.allTime}
+                emptyText={tab === 'all' ? 'No scores yet.' : tab === 'streaks' ? 'No streaks yet today.' : 'No scores yet today.'}
+                scorePrefix={tab === 'streaks' ? '🔥 ' : ''}
               />
             </div>
           )}
@@ -159,16 +167,21 @@ export const ResultScreen = ({
           <span className="stat-label">Streak</span>
         </div>
         <div className="stat" role="listitem">
-          <span className="stat-value mono">{board.rankToday ? `#${board.rankToday}` : '—'}</span>
+          <span className="stat-value mono">
+            {(tab === 'streaks' ? board.rankStreak : board.rankToday) ? `#${tab === 'streaks' ? board.rankStreak : board.rankToday}` : '—'}
+          </span>
           <span className="stat-label">Rank</span>
         </div>
       </div>
-      <div className="row">
-        <button type="button" className="btn btn-primary" onClick={onComment}>
-          💬 Argue in the comments
+      <div className="row cta-row">
+        <button type="button" className="btn btn-primary" onClick={onComment} aria-label="Argue in the comments">
+          💬 Comments
         </button>
-        <button type="button" className="btn btn-ghost" disabled={joined} onClick={() => void onJoin()}>
-          {joined ? 'Joined ✓' : `Join r/${subredditName}`}
+        <button type="button" className="btn btn-cyan" onClick={onDuel} aria-label="Duel a friend">
+          ⚔️ Duel
+        </button>
+        <button type="button" className="btn btn-ghost" disabled={joined} onClick={() => void onJoin()} aria-label={`Join r/${subredditName}`}>
+          {joined ? 'Joined ✓' : '＋ Join'}
         </button>
       </div>
       <footer className="titleblock mono" aria-label="Sheet info">

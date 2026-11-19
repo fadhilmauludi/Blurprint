@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { sfx } from '../audio';
 import type { RevealPayload } from '../../shared/types';
 import { BlendCanvas } from '../components/BlendCanvas';
 import { ChoiceButtons } from '../components/ChoiceButtons';
@@ -11,7 +12,10 @@ type Props = {
 
 export const RevealScreen = ({ reveal, nextLabel, onNext }: Props) => {
   const [sharp, setSharp] = useState(false);
-  const { correct, answerWord, pctCorrect, blend, choices, syncPct, syncBonus, pointsEarned } = reveal;
+  const { correct, answerWord, pctCorrect, blend, choices, syncPct, syncBonus, pointsEarned, timedOut, elapsedMs, tier } = reveal;
+  useEffect(() => {
+    sfx.play(correct ? 'correct' : timedOut ? 'timeout' : 'wrong');
+  }, [correct, timedOut]);
   return (
     <>
       <div
@@ -19,10 +23,10 @@ export const RevealScreen = ({ reveal, nextLabel, onNext }: Props) => {
         role="status"
       >
         <span className="banner-icon" aria-hidden="true">
-          {correct ? '✓' : '✗'}
+          {correct ? '✓' : timedOut ? '⏱' : '✗'}
         </span>
         <span>
-          {correct ? 'Nailed it! The crowd drew ' : 'Not quite — the crowd drew '}
+          {correct ? 'Nailed it! The crowd drew ' : timedOut ? 'Time’s up! The crowd drew ' : 'Not quite — the crowd drew '}
           <strong className="answer-word">{answerWord}</strong>
         </span>
         {pointsEarned > 0 ? <span className="points mono">+{pointsEarned}</span> : null}
@@ -43,6 +47,12 @@ export const RevealScreen = ({ reveal, nextLabel, onNext }: Props) => {
         </div>
       </div>
       {choices ? <ChoiceButtons choices={choices} answerId={reveal.answerId} pickedId={reveal.pickedId} compact /> : null}
+      {elapsedMs !== null && tier ? (
+        <p className="reveal-meta mono">
+          {timedOut ? 'No answer in time' : `Answered in ${(elapsedMs / 1000).toFixed(1)} s`} · {tier.name}
+          {tier.multiplier !== 1 ? ` ×${tier.multiplier}` : ''}
+        </p>
+      ) : null}
       {pctCorrect !== null ? (
         <div className="pct" aria-label={`${pctCorrect}% guessed right`}>
           <div className="pct-track">
