@@ -22,8 +22,8 @@ export const RevealScreen = ({ reveal, nextLabel, onNext }: Props) => {
           {correct ? '✓' : '✗'}
         </span>
         <span>
-          {correct ? 'Nailed it! ' : 'Not quite — '}
-          the crowd drew <strong className="answer-word">{answerWord}</strong>
+          {correct ? 'Nailed it! The crowd drew ' : 'Not quite — the crowd drew '}
+          <strong className="answer-word">{answerWord}</strong>
         </span>
         {pointsEarned > 0 ? <span className="points mono">+{pointsEarned}</span> : null}
       </div>
@@ -38,7 +38,7 @@ export const RevealScreen = ({ reveal, nextLabel, onNext }: Props) => {
             aria-pressed={sharp}
             onClick={() => setSharp((s) => !s)}
           >
-            {sharp ? '◐ Blur' : '◑ Sharpen'}
+            {sharp ? 'Blur it' : 'Sharpen'}
           </button>
         </div>
       </div>

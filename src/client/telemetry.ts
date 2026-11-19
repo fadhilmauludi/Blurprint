@@ -6,6 +6,8 @@
 import { telemetry } from '@devvit/analytics/client/reddit';
 
 let started = false;
+let ready = false;
+const seenResults = new Set<string>();
 
 const safe = (fn: () => Promise<unknown>): void => {
   try {
@@ -17,7 +19,11 @@ const safe = (fn: () => Promise<unknown>): void => {
 
 export const track = {
   /** Game view finished loading and is interactive. */
-  appReady: () => safe(() => telemetry.appReady()),
+  appReady: () => {
+    if (ready) return;
+    ready = true;
+    safe(() => telemetry.appReady());
+  },
 
   /** Call on the FIRST committed user action (Journey.Start must not fire on load). */
   ensureStarted: (day: number, isArchive: boolean, firstTime: boolean) => {
@@ -39,12 +45,16 @@ export const track = {
     safe(() => telemetry.progress({ progress: 0.8, action: 'draw_submitted', actionDetails: `day:${day};cells:${cellCount}` })),
   drawTimeout: (day: number) => safe(() => telemetry.interaction({ action: 'draw_timeout', actionDetails: `day:${day}` })),
 
-  resultViewed: (day: number, streak: number, win: boolean, score: number) =>
+  resultViewed: (day: number, streak: number, win: boolean, score: number) => {
+    const key = `${day}:${score}`;
+    if (seenResults.has(key)) return;
+    seenResults.add(key);
     safe(async () => {
       await telemetry.interaction({ action: 'result_viewed', actionDetails: `day:${day};streak:${streak}` });
       if (started) await telemetry.endJourney({ complete: true, game: { win, score } });
       started = false;
-    }),
+    });
+  },
 
   cta: (kind: 'comment' | 'subscribe', day: number) =>
     safe(() => telemetry.interaction({ action: `cta_${kind}`, actionDetails: `day:${day}` })),

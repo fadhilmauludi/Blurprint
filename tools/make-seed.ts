@@ -44,6 +44,12 @@ const SHAPES: Record<string, Shape> = {
     }),
     union(circle(-0.25, -0.3, 0.13), circle(0.25, -0.3, 0.13))
   ),
+  raindrop: (x, y) => {
+    // Teardrop: circle at the bottom, point at the top.
+    if (y > 0.2) return x * x + (y - 0.35) ** 2 <= 0.62 ** 2;
+    const halfWidth = ((y + 1) / 1.2) * 0.6;
+    return y >= -1 && Math.abs(x) <= halfWidth;
+  },
   sword: union(rect(-0.1, -1, 0.1, 0.35), rect(-0.45, 0.35, 0.45, 0.5), rect(-0.08, 0.5, 0.08, 0.95)),
   hammer: union(rect(-0.65, -0.9, 0.65, -0.45), rect(-0.12, -0.45, 0.12, 1)),
 };

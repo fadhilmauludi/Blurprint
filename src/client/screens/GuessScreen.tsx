@@ -21,7 +21,8 @@ export const GuessScreen = ({ guess, isArchive, loggedIn, showHint, onDismissHin
     <>
       <div>
         <h1 className="heading">
-          {isArchive ? `On Day ${blend.day}` : 'Yesterday'}, {blend.total} people drew the same thing. What was it?
+          {!isArchive ? 'Yesterday' : blend.day <= 0 ? 'Before launch' : `On Day ${blend.day}`}, {blend.total} people drew the same
+          thing. What was it?
         </h1>
       </div>
       {showHint ? <Hint text="Squint! This is everyone’s drawing blended together." onDismiss={onDismissHint} /> : null}
@@ -41,7 +42,12 @@ export const GuessScreen = ({ guess, isArchive, loggedIn, showHint, onDismissHin
           {error}
         </p>
       ) : null}
-      <ChoiceButtons choices={choices} onPick={onPick} disabled={!loggedIn || pendingId !== null} pendingId={pendingId} />
+      <ChoiceButtons
+        choices={choices}
+        onPick={loggedIn ? onPick : () => showLoginPrompt()}
+        disabled={pendingId !== null}
+        pendingId={pendingId}
+      />
       {!loggedIn ? (
         <button type="button" className="btn btn-primary btn-block" onClick={() => showLoginPrompt()}>
           Log in to play

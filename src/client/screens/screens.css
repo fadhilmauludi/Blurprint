@@ -134,8 +134,8 @@
 }
 @keyframes pop {
   0% {
-    transform: scale(1.6);
-    opacity: 0;
+    transform: scale(1.5);
+    opacity: 0.5;
   }
   30% {
     transform: scale(1);
@@ -276,5 +276,63 @@
   }
   .stat-label {
     font-size: 11px;
+  }
+}
+
+/* ── Title block (engineering-drawing corner stamp) ────────────────────── */
+.titleblock {
+  display: flex;
+  border: 1px solid var(--bp-line);
+  border-radius: 6px;
+  background: rgba(7, 42, 102, 0.85);
+  font-size: 11px;
+  line-height: 1.25;
+  color: var(--bp-muted);
+  overflow: hidden;
+}
+.tb-cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 5px 9px;
+  border-right: 1px solid var(--bp-line);
+  white-space: nowrap;
+  min-width: 0;
+}
+.tb-cell:last-child {
+  border-right: none;
+}
+.tb-grow {
+  flex: 1;
+  overflow: hidden;
+}
+.tb-grow span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tb-strong {
+  color: var(--bp-ink);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.tb-btn {
+  align-items: center;
+  min-width: var(--tap);
+  min-height: var(--tap);
+  background: none;
+  border-top: none;
+  border-bottom: none;
+  border-left: none;
+  color: var(--bp-cyan);
+  font: inherit;
+  cursor: pointer;
+}
+.tb-btn .tb-strong {
+  color: var(--bp-cyan);
+}
+@media (max-width: 400px) {
+  .row .btn {
+    font-size: 14px;
+    padding: 8px 10px;
   }
 }

@@ -171,20 +171,25 @@ export const ResultScreen = ({
           {joined ? 'Joined ✓' : `Join r/${subredditName}`}
         </button>
       </div>
-      <footer className="footer">
-        <span>
-          {isArchive ? 'Archive' : `New Blurprint in ${formatCountdown(nextRolloverUtcMs - now)}`} · {CREDIT}
-        </span>
-        <span>
-          {FEATURES.devTools && rawCells ? (
-            <button type="button" className="link-btn" onClick={() => void onCopy()}>
-              Copy drawing
-            </button>
-          ) : null}
-          <button type="button" className="link-btn" onClick={() => setAbout(true)} aria-haspopup="dialog">
-            ⓘ About
+      <footer className="titleblock mono" aria-label="Sheet info">
+        <div className="tb-cell">
+          <span className="tb-strong">SHEET #{day}</span>
+          <span>BLURPRINT</span>
+        </div>
+        <div className="tb-cell tb-grow">
+          <span className="tb-strong">{isArchive ? 'ARCHIVE' : `NEW BLURPRINT IN ${formatCountdown(nextRolloverUtcMs - now)}`}</span>
+          <span>{CREDIT}</span>
+        </div>
+        {FEATURES.devTools && rawCells ? (
+          <button type="button" className="tb-cell tb-btn" onClick={() => void onCopy()}>
+            <span className="tb-strong">⧉</span>
+            <span>Copy</span>
           </button>
-        </span>
+        ) : null}
+        <button type="button" className="tb-cell tb-btn" onClick={() => setAbout(true)} aria-haspopup="dialog">
+          <span className="tb-strong" aria-hidden="true">ⓘ</span>
+          <span>About</span>
+        </button>
       </footer>
       {about ? <AboutSheet onClose={() => setAbout(false)} onForgotten={onForgotten} /> : null}
     </>
