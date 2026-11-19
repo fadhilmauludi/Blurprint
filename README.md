@@ -23,6 +23,12 @@ npm run dev          # playtest in your private test subreddit
 npm run upload       # private build — never `devvit publish` (hackathon rule)
 ```
 
+## Playable demo (no Reddit needed)
+
+`npm run demo:build` builds `dist-standalone/blurprint-demo.html`: one self-contained page with the
+real client and the real API routes running in the browser over an in-memory store (`standalone/`).
+A demo bar switches level (Warm-up → Expert) and player; duels are played against a computer rival.
+
 ## Layout
 
 ```
