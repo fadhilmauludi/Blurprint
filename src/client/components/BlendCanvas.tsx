@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { displayValues } from '../../shared/blend';
 import { BLEND_BLUR_PX, GRID_SIZE, MIN_BLEND_DRAWINGS } from '../../shared/config';
+import { focusBlurAt } from '../../shared/difficulty';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import './blend.css';
 
@@ -14,6 +15,14 @@ type Props = {
   highlight?: number[] | undefined;
   /** Animate the blur from heavy → normal on mount (600 ms). */
   animateIn?: boolean;
+  /**
+   * Timed guessing: the blur starts at `startBlur` × normal and pulls into focus
+   * over `seconds`. `remainingMs` is the time left when this mounts (resume).
+   * `frozen` stops the pull (e.g. once an answer is sent).
+   */
+  focusPull?: { seconds: number; startBlur: number; remainingMs: number; frozen?: boolean } | undefined;
+  /** Extra blur multiplier with no animation (the pre-start teaser). */
+  blurScale?: number;
   /** Accessible description of what the image shows. */
   label: string;
 };
@@ -35,7 +44,17 @@ const rampColor = (t: number): Rgb => {
  * painted on a tiny offscreen canvas, scaled up with smoothing on, then
  * softened with a CSS blur for the signature "blurprint" look.
  */
-export const BlendCanvas = ({ values, total, hidden = false, sharp = false, highlight, animateIn = false, label }: Props) => {
+export const BlendCanvas = ({
+  values,
+  total,
+  hidden = false,
+  sharp = false,
+  highlight,
+  animateIn = false,
+  focusPull,
+  blurScale = 1,
+  label,
+}: Props) => {
   const frameRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const flashRef = useRef<HTMLCanvasElement>(null);
@@ -140,12 +159,43 @@ export const BlendCanvas = ({ values, total, hidden = false, sharp = false, high
   }, [highlight, size]);
 
   const blur = sharp ? 0 : (BLEND_BLUR_PX * size) / 300;
-  const filter = `blur(${(entered ? blur : blur * 3.5).toFixed(1)}px)`;
+  const pullOn = Boolean(focusPull) && !sharp;
+  const filter = pullOn ? undefined : `blur(${(entered ? blur * blurScale : blur * 3.5).toFixed(1)}px)`;
+
+  // Focus pull: update the CSS blur every frame through the ref (no re-renders).
+  const pullSeconds = focusPull?.seconds ?? 0;
+  const pullStart = focusPull?.startBlur ?? 1;
+  const pullRemaining = focusPull?.remainingMs ?? 0;
+  const pullFrozen = focusPull?.frozen ?? false;
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!pullOn || !canvas || size === 0) return;
+    const elapsedAtMount = pullSeconds * 1000 - pullRemaining;
+    const t0 = performance.now();
+    const apply = (elapsed: number) => {
+      // Reduced motion: step once per second instead of a smooth pull.
+      const e = reduced ? Math.floor(elapsed / 1000) * 1000 : elapsed;
+      canvas.style.filter = `blur(${(blur * focusBlurAt(e, pullSeconds, pullStart)).toFixed(2)}px)`;
+    };
+    if (pullFrozen) {
+      // Keep whatever blur the player answered at.
+      if (!canvas.style.filter) apply(elapsedAtMount);
+      return;
+    }
+    let raf = 0;
+    const frame = (t: number) => {
+      const elapsed = elapsedAtMount + (t - t0);
+      apply(elapsed);
+      if (elapsed < pullSeconds * 1000) raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
+  }, [pullOn, pullSeconds, pullStart, pullRemaining, pullFrozen, blur, size, reduced, values]);
 
   return (
     <div ref={frameRef} className={`blend-frame${sharp ? ' is-sharp' : ''}`} role="img" aria-label={label}>
       {values ? (
-        <canvas ref={canvasRef} className="blend-canvas" style={{ filter }} />
+        <canvas ref={canvasRef} className={`blend-canvas${pullOn ? ' is-pulling' : ''}`} style={filter ? { filter } : undefined} />
       ) : (
         <div className="blend-placeholder">
           <div className="blend-placeholder-cells" aria-hidden="true">

@@ -1,16 +1,20 @@
 import './styles/base.css';
 import './components/components.css';
 import './screens/screens.css';
+import './screens/features.css';
 
-import { context, showLoginPrompt } from '@devvit/web/client';
+import { context, getShareData, showLoginPrompt } from '@devvit/web/client';
 import { StrictMode, useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MIN_CELLS } from '../shared/config';
+import { parseDuelShare } from '../shared/duel';
 import type { DrawPayload, HintId, InitResponse, ResultPayload, RevealPayload } from '../shared/types';
 import { api } from './api';
+import { sfx } from './audio';
 import { BlendCanvas } from './components/BlendCanvas';
 import { TopBar } from './components/TopBar';
 import { DrawScreen } from './screens/DrawScreen';
+import { DuelScreen } from './screens/DuelScreen';
 import { GuessScreen } from './screens/GuessScreen';
 import { IntroScreen } from './screens/IntroScreen';
 import { ResultScreen } from './screens/ResultScreen';
@@ -18,7 +22,28 @@ import { RevealScreen } from './screens/RevealScreen';
 import { ArchiveBanner, ErrorScreen, LoadingScreen } from './screens/States';
 import { track } from './telemetry';
 
-type Stage = 'loading' | 'error' | 'guess' | 'reveal' | 'intro' | 'draw' | 'result' | 'loggedOut';
+type Stage = 'loading' | 'error' | 'guess' | 'reveal' | 'intro' | 'draw' | 'result' | 'loggedOut' | 'duel';
+
+/**
+ * A duel invite from the share link this view was opened with (validated;
+ * untrusted). Share data stays the same for the page's lifetime, so it is
+ * cached and cleared once the player leaves the duel — otherwise every reload
+ * would bounce them back into it.
+ */
+let sharedInvite: string | null | undefined;
+const sharedDuelId = (): string | null => {
+  if (sharedInvite === undefined) {
+    try {
+      sharedInvite = parseDuelShare(getShareData());
+    } catch {
+      sharedInvite = null;
+    }
+  }
+  return sharedInvite;
+};
+const forgetSharedDuel = () => {
+  sharedInvite = null;
+};
 
 const stageFor = (init: InitResponse): Stage => {
   if (init.phase === 'guess') return 'guess';
@@ -41,6 +66,9 @@ export const App = () => {
   const [rawCells, setRawCells] = useState<number[] | null>(null);
   const [seenHints, setSeenHints] = useState<HintId[]>([]);
   const [streak, setStreak] = useState<number | null>(null);
+  const [starting, setStarting] = useState(false);
+  /** Duel to open (null = hub) and where "Back" returns to. */
+  const [duel, setDuel] = useState<{ id: string | null; back: Stage } | null>(null);
 
   const applyInit = useCallback((r: Awaited<ReturnType<typeof api.init>>) => {
     if (!r.ok) {
@@ -56,7 +84,12 @@ export const App = () => {
     setSeenHints(data.seenHints);
     setStreak(data.user?.streak ?? null);
     setActionError(null);
-    setStage(stageFor(data));
+    const daily = stageFor(data);
+    const invite = data.pendingDuelId ?? sharedDuelId();
+    if (invite) {
+      setDuel({ id: invite, back: daily });
+      setStage('duel');
+    } else setStage(daily);
   }, []);
 
   const load = useCallback(async () => {
@@ -76,10 +109,29 @@ export const App = () => {
     void api.hint(hint);
   };
 
-  const onGuess = async (choiceId: string) => {
+  const onStartGuess = async () => {
     if (!init?.guess) return;
     track.ensureStarted(init.postDay, init.isArchive, init.firstTime);
-    setPendingChoice(choiceId);
+    track.guessStarted(init.postDay, init.guess.tier.level);
+    setStarting(true);
+    setActionError(null);
+    const r = await api.guessStart(init.guess.blend.day);
+    setStarting(false);
+    if (!r.ok) {
+      if (r.error.code === 'ALREADY_DONE' || r.error.code === 'WRONG_PHASE') return void load();
+      setActionError(r.error.error);
+      return;
+    }
+    sfx.play('start');
+    setInit({ ...init, guess: r.data.guess });
+  };
+
+  /** choiceId null = the clock ran out. */
+  const onGuess = async (choiceId: string | null) => {
+    if (!init?.guess || pendingChoice !== null) return;
+    track.ensureStarted(init.postDay, init.isArchive, init.firstTime);
+    if (choiceId) sfx.play('tap');
+    setPendingChoice(choiceId ?? '');
     setActionError(null);
     const r = await api.guess({ day: init.guess.blend.day, choiceId });
     setPendingChoice(null);
@@ -123,6 +175,7 @@ export const App = () => {
     if (short && timedOut) track.drawTimeout(init.postDay);
     else track.drawSubmitted(init.postDay, cells.length);
     setTimedOutNote(short && timedOut);
+    sfx.play(short && timedOut ? 'timeout' : 'submit');
     setResult(r.data.result);
     setStreak(r.data.result.streak);
     setStage('result');
@@ -134,10 +187,26 @@ export const App = () => {
   const day = init.postDay;
   const loggedIn = init.user !== null;
 
+  const openDuel = (id: string | null) => {
+    setDuel({ id, back: stage === 'duel' ? (duel?.back ?? stageFor(init)) : stage });
+    setStage('duel');
+  };
+  const closeDuel = () => {
+    forgetSharedDuel();
+    if (init.pendingDuelId) void api.duelDismiss();
+    const back = duel?.back ?? stageFor(init);
+    setDuel(null);
+    // The daily state may have moved on while duelling (e.g. a new day): reload it.
+    if (init.pendingDuelId) void load();
+    else setStage(back);
+  };
+
   return (
     <main className="app" data-stage={stage}>
       {init.isArchive ? <ArchiveBanner subredditName={init.subredditName} todayPostId={init.todayPostId} /> : null}
-      <TopBar day={day} streak={streak} />
+      <TopBar day={day} streak={streak} tier={stage === 'duel' ? null : init.tier} />
+
+      {stage === 'duel' && duel ? <DuelScreen key={duel.id ?? 'hub'} duelId={duel.id} loggedIn={loggedIn} onExit={closeDuel} /> : null}
 
       {stage === 'guess' && init.guess ? (
         <GuessScreen
@@ -146,7 +215,10 @@ export const App = () => {
           loggedIn={loggedIn}
           showHint={loggedIn && !seenHints.includes('squint')}
           onDismissHint={() => dismissHint('squint')}
+          onStart={() => void onStartGuess()}
+          starting={starting}
           onPick={(id) => void onGuess(id)}
+          onTimeout={() => void onGuess(null)}
           pendingId={pendingChoice}
           error={actionError}
         />
@@ -188,6 +260,7 @@ export const App = () => {
           timedOutNote={timedOutNote}
           rawCells={rawCells}
           onForgotten={() => void load()}
+          onDuel={() => openDuel(null)}
         />
       ) : null}
     </main>

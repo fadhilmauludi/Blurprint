@@ -6,6 +6,12 @@ lined up and averaged into one blurry "blurprint". Tomorrow, everyone guesses wh
 
 Built on **Devvit Web** for Reddit's Game of the Day Hackathon · by XenixWave.
 
+- **On the clock:** the blend starts very blurry and pulls into focus; guess early for more points.
+- **Gets harder:** Warm-up → Tricky → Hard → Expert as the days go by (more choices, less time, bigger multiplier).
+- **Winners boards:** today's scores, 🔥 longest streaks, all-time, and yesterday's podium.
+- **1v1 duels:** challenge a friend through Reddit's share sheet; 5 rounds, each harder, live when you're both online.
+- **Sound:** synthesised effects with a mute toggle.
+
 ## Quick start
 
 ```bash

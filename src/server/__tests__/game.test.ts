@@ -36,13 +36,18 @@ const expectFail = async (p: Promise<unknown>, code: string) => {
   await expect(p).rejects.toBeInstanceOf(ApiFail);
   await expect(p).rejects.toMatchObject({ code });
 };
+/** Start the guess clock and answer immediately (full speed points). */
+const guessNow = async (who: Who, post: PostRef, day: number, choiceId: string | null) => {
+  await game.startGuess(deps, who, post, day);
+  return game.guess(deps, who, post, { day, choiceId });
+};
 /** n fake players draw `cells` on `day`'s post (no guess needed when there's no blend). */
 const crowdDraws = async (day: number, n: number, cells = square, offset = 0) => {
   const post = await postFor(day);
   for (let i = offset; i < offset + n; i++) {
     const who = { userId: `t2_crowd${day}_${i}`, username: `crowd${i}` };
     const init = await game.init(deps, who, post);
-    if (init.phase === 'guess') await game.guess(deps, who, post, { day: day - 1, choiceId: init.guess!.choices[0]!.id });
+    if (init.phase === 'guess') await guessNow(who, post, day - 1, choicesForDay(day - 1)[0]!.id);
     await game.draw(deps, who, post, { day, cells });
   }
 };
@@ -146,23 +151,26 @@ describe('guess → reveal → draw on day 2', () => {
     const post = await postFor(2);
     const init = await game.init(deps, alice, post);
     expect(init.phase).toBe('guess');
-    expect(init.guess?.choices).toEqual(choicesForDay(1));
+    // Before the clock starts: a coarse teaser and no choices.
+    expect(init.guess?.started).toBe(false);
+    expect(init.guess?.choices).toBeNull();
     expect(init.guess?.blend.values).not.toBeNull();
+    expect(init.guess?.blend.values).not.toEqual((await getBlend(deps, 1)).values);
     expect(init.draw).toBeUndefined(); // today's prompt stays secret
     expect(JSON.stringify(init)).not.toContain(`"answerId"`);
 
     await expectFail(game.draw(deps, alice, post, { day: 2, cells: square }), 'WRONG_PHASE');
     await expectFail(game.skipGuess(deps, alice, post), 'WRONG_PHASE');
-    await expectFail(game.guess(deps, alice, post, { day: 1, choiceId: 'not-a-choice' }), 'BAD_INPUT');
-    await expectFail(game.guess(deps, alice, post, { day: 2, choiceId: promptForDay(1).id }), 'BAD_INPUT');
+    await expectFail(guessNow(alice, post, 1, 'not-a-choice'), 'BAD_INPUT');
+    await expectFail(guessNow(alice, post, 2, promptForDay(1).id), 'BAD_INPUT');
 
-    const r = await game.guess(deps, alice, post, { day: 1, choiceId: promptForDay(1).id });
+    const r = await guessNow(alice, post, 1, promptForDay(1).id);
     expect(r.reveal.correct).toBe(true);
     expect(r.reveal.answerWord).toBe(promptForDay(1).word);
     expect(r.reveal.pctCorrect).toBe(100);
     expect(r.reveal.pointsEarned).toBe(100);
     expect(r.draw?.promptWord).toBe(promptForDay(2).word);
-    await expectFail(game.guess(deps, alice, post, { day: 1, choiceId: promptForDay(1).id }), 'ALREADY_DONE');
+    await expectFail(guessNow(alice, post, 1, promptForDay(1).id), 'ALREADY_DONE');
 
     const again = await game.init(deps, alice, post);
     expect(again.phase).toBe('draw');
@@ -175,8 +183,8 @@ describe('guess → reveal → draw on day 2', () => {
   it('pctCorrect reflects everyone', async () => {
     const post = await postFor(2);
     const wrong = choicesForDay(1).find((c) => c.id !== promptForDay(1).id)!.id;
-    await game.guess(deps, bob, post, { day: 1, choiceId: wrong });
-    const r = await game.guess(deps, alice, post, { day: 1, choiceId: promptForDay(1).id });
+    await guessNow(bob, post, 1, wrong);
+    const r = await guessNow(alice, post, 1, promptForDay(1).id);
     expect(r.reveal.pctCorrect).toBe(50);
     const b = await game.init(deps, bob, post);
     expect(b.reveal?.correct).toBe(false);
@@ -202,7 +210,7 @@ describe('streaks + crowd sync across days', () => {
     const p2 = await postFor(2);
     const init = await game.init(deps, alice, p2);
     expect(init.phase).toBe('guess');
-    const r = await game.guess(deps, alice, p2, { day: 1, choiceId: promptForDay(1).id });
+    const r = await guessNow(alice, p2, 1, promptForDay(1).id);
     expect(r.reveal.syncPct).toBe(100);
     expect(r.reveal.syncBonus).toBe(50);
     // Re-opening doesn't double-award.
@@ -218,7 +226,7 @@ describe('streaks + crowd sync across days', () => {
       setDay(d);
       const p = await postFor(d);
       const init = await game.init(deps, alice, p);
-      if (init.phase === 'guess') await game.guess(deps, alice, p, { day: d - 1, choiceId: init.guess!.choices[0]!.id });
+      if (init.phase === 'guess') await guessNow(alice, p, d - 1, choicesForDay(d - 1)[0]!.id);
       const { result } = await game.draw(deps, alice, p, { day: d, cells: square });
       expect(result.streak).toBe(d);
       expect(result.streakMilestone).toBe(d === 3 ? 3 : null);
@@ -245,7 +253,7 @@ describe('archive mode', () => {
     expect(init.isArchive).toBe(true);
     expect(init.todayPostId).toBe(p2.postId);
     expect(init.phase).toBe('guess');
-    const r = await game.guess(deps, alice, p1, { day: 0, choiceId: promptForDay(0).id });
+    const r = await guessNow(alice, p1, 0, promptForDay(0).id);
     expect(r.reveal.pointsEarned).toBe(0);
     expect(r.draw).toBeNull();
     expect(r.result).not.toBeNull();

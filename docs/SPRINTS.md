@@ -77,6 +77,18 @@ test (≥ 2 of 3 blends recognised). Record Plan A / B1 / B2 in `docs/DECISIONS.
 | 4.4 | 15–20 playtesters, 2+ days, notes in `docs/PLAYTEST.md` | 🧑 Fadhil |
 | 4.5 | Fix top bugs; flair streak (stretch, flag off by default) | 🤖 |
 
+## Sprint 6 — Harder + social (added 19 Nov, owner request) · before the freeze
+
+| # | Task | Owner | Status |
+|---|------|-------|--------|
+| 6a | Difficulty tiers by day (4→6 choices, 20→10 s, ×1→×2), server-timed focus-pull guess, speed scoring, coarse teaser before the clock | 🤖 | ✅ D-19…D-21 |
+| 6b | Winners boards: 🔥 Streaks tab + "Yesterday's winners" podium | 🤖 | ✅ D-24 |
+| 6c | 1v1 duels: share-sheet invite, 5 escalating rounds, realtime nudges + polling, duel history + wins | 🤖 | ✅ D-22 |
+| 6d | Synthesised audio + mute toggle | 🤖 | ✅ D-23 |
+| 6e | Harness + Playwright: every new screen at 360×640 / 390×844 / feed 360×400, 96 tests | 🤖 | ✅ |
+| 6f | On real Reddit: share sheet + `getShareData` round trip, realtime between two devices, audio on iOS (silent switch) | 🧑 | ☐ |
+| 6g | Tune tier timings / start blur / duel clocks with playtesters (`DIFFICULTY_TIERS`, `DUEL_ROUNDS`) | 🤖 + 🧑 | ☐ |
+
 ### ❄️ Freeze — 6 Dec. Bug fixes only.
 
 ## Sprint 5 — Submission (6–7 Dec) · spec M4

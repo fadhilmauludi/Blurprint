@@ -59,6 +59,22 @@ is recorded here with the source. Devvit version verified: **0.15.4** (template 
 
 **D-18 · Archive guesses** don't touch `guessStats`, leaderboards or totals ("counts for nothing else").
 
+### Sprint 6 — harder + more social (owner request, 19 Nov)
+
+The owner found the guess too easy and asked for audio, a winners leaderboard (score or streak), progressive difficulty and 1v1 duels. These change the spec on purpose:
+
+**D-19 · Difficulty tiers by day.** `DIFFICULTY_TIERS` in `config.ts`, chosen by the **post's day** so everyone faces the same puzzle on the same day (fair boards): Warm-up (Days ≤3: 4 choices, 20 s, ×1), Tricky (4–7: 5 choices, 16 s, ×1.25), Hard (8–14: 6 choices, 13 s, ×1.5), Expert (15+: 6 choices, 10 s, ×2). Every prompt group has 6 members, so 6 choices = the whole silhouette group. Spec §4.5 said "one guess, no timer" — replaced.
+
+**D-20 · Timed "focus pull" guessing.** The player taps *Start the clock*; the server records the start (`day:N:guessStarts`, `hSetNX`, so a reload resumes the same clock). The blend starts at `startBlur` × the normal blur and sharpens with an **ease-in** curve to normal at the end of the clock, so it stays murky for most of the first half. Points = `100 × multiplier × speed`, where speed falls linearly from 1.0 to 0.5 over the clock, rounded to 5. No answer within the clock + `GUESS_GRACE_MS` (2.5 s network grace) = timeout: wrong, 0 points, counted in "% guessed right", drawing still allowed. Timing is server-side only; the client clock is display only.
+
+**D-21 · Nothing to study before the clock.** Before *Start*, the client gets a **coarse teaser** (2×2 block averages, `TEASER_BLOCK`) and **no choices**. The splash also only receives the teaser. So the first real look at the blend is on the clock.
+
+**D-22 · Duels (1v1).** `src/server/services/duelService.ts`. A player creates a duel (≤ 10/day) and shares the post with Reddit's share sheet (`showShareSheet({ data })`); the friend's client reads `getShareData()` (validated: only `{t:'duel', id:/^[a-z0-9]{10}$/}`). The splash hands the invite to the game view through `duel:invites` (the expanded view may not see the share data). Both players get the same 5 rounds, each harder (`DUEL_ROUNDS`: 4→6 choices, 12→8 s, more starting blur), with the same server-timed speed scoring. Round blends come from past public days and the seed bank, **never today's or yesterday's prompt** (yesterday's blend is today's puzzle). Async by default; when both are online, `realtime.send('duel_{id}', nudge)` makes the opponent's marks update instantly. Nudges carry no data — the client refetches, and polls every 4 s as a fallback. Unanswered rounds past their clock count as misses; a duel settles 24 h after the guest joins. Duels don't touch the daily leaderboards (keeps the daily fair); wins are counted on the user hash (`duelWins`). Duel records expire after 7 days and are deleted by "Delete my data".
+
+**D-23 · Audio is synthesised.** `src/client/audio.ts`: every sound is a few Web Audio oscillator notes (no files, no network, nothing AI-generated). Created lazily inside a user gesture; mute toggle in the top bar, remembered in `localStorage` (falls back to session-only if storage is blocked).
+
+**D-24 · Winners boards.** Result tabs are now Blend / Today / 🔥 Streaks / All-time. *Streaks* ranks today's artists by their streak (`lb:streak:N`, written when they draw, 30-day TTL). *Today* opens with "Yesterday's winners" (top 3 of `lb:day:N−1`).
+
 ---
 
 ## Devvit Rules compliance
@@ -67,12 +83,12 @@ is recorded here with the source. Devvit version verified: **0.15.4** (template 
 |------|------------------------|
 | Limited in-app expression for UGC | Only a 10×10 on/off grid; no text input. Individual drawings are never shown to anyone but their author; only aggregates (≥ 5 drawings) are public. Mods can hide any day's blend. |
 | Respect user deletions — account deletion | Hourly `purge-sweep` walks the player index (`lb:all`) in batches and removes all data for accounts `getUserById` no longer returns, including subtracting their drawings from blends. |
-| Users can remove their own content | "About → Delete my Blurprint data" calls `/api/forget` (same purge). |
-| Auto-deletion ≤ 30 days | All per-user per-day hashes and daily boards expire after 30 days. |
-| Subscribe actions explicit, never gating | "Join r/…" is a separate, labelled button on the result card, never required. |
+| Users can remove their own content | "About → Delete my Blurprint data" calls `/api/forget` (same purge, including duels, streak boards and guess clocks). |
+| Auto-deletion ≤ 30 days | All per-user per-day hashes and daily boards expire after 30 days; duels after 7. |
+| Subscribe actions explicit, never gating | "Join r/…" is a separate, labelled button on the result card, never required. Duel invites only open the share sheet when the player taps *Invite a friend*. |
 | No posting/commenting as the user | We don't. "Argue in the comments" only navigates to the post. |
 | Data minimisation / no PII in telemetry | Only userId/username (for one-per-day and leaderboard display). Telemetry fields contain day numbers and enums only. |
-| No external requests | None (client or server). |
+| No external requests | None (client or server). Realtime is a Devvit plugin; audio is synthesised locally. |
 | No Reddit IP / AI art | All visuals are CSS/canvas; no Snoo, no generated art. |
 | Don't publish | `npm run launch` removed; only `npm run dev` / `npm run upload`. |
 

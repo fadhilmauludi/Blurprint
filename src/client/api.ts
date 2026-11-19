@@ -2,6 +2,11 @@ import type {
   ApiError,
   BlendPayload,
   DrawRequest,
+  DuelAnswerRequest,
+  DuelAnswerResponse,
+  DuelRoundPayload,
+  DuelView,
+  GuessStartResponse,
   DrawResponse,
   GuessRequest,
   GuessResponse,
@@ -20,6 +25,7 @@ const FRIENDLY: Record<ApiError['code'], string> = {
   BAD_INPUT: 'Something about that didn’t look right.',
   WRONG_PHASE: 'Things moved on — let’s reload.',
   NOT_FOUND: 'This Blurprint isn’t available.',
+  RATE_LIMITED: 'Slow down a little and try again later.',
   SERVER: 'The server hiccuped. Try again?',
 };
 
@@ -56,6 +62,7 @@ const post = <T>(path: string, body?: unknown) =>
 export const api = {
   init: () => request<InitResponse>('/api/init'),
   splash: () => request<SplashResponse>('/api/splash'),
+  guessStart: (day: number) => post<GuessStartResponse>('/api/guess/start', { day }),
   guess: (body: GuessRequest) => post<GuessResponse>('/api/guess', body),
   skipGuess: () => post<SkipGuessResponse>('/api/skip-guess'),
   draw: (body: DrawRequest) => post<DrawResponse>('/api/draw', body),
@@ -64,4 +71,12 @@ export const api = {
   hint: (hint: HintId) => post<{ ok: true }>('/api/hint', { hint }),
   forget: () => post<{ ok: true }>('/api/forget'),
   subscribe: () => post<{ ok: true }>('/api/subscribe'),
+  duelCreate: () => post<DuelView>('/api/duel/create'),
+  duel: (id: string) => request<DuelView>(`/api/duel?id=${encodeURIComponent(id)}`),
+  duelMine: () => request<{ duels: DuelView[]; wins: number }>('/api/duel/mine'),
+  duelJoin: (id: string) => post<DuelView>('/api/duel/join', { id }),
+  duelRound: (id: string, round: number) => post<DuelRoundPayload>('/api/duel/round', { id, round }),
+  duelAnswer: (body: DuelAnswerRequest) => post<DuelAnswerResponse>('/api/duel/answer', body),
+  duelRemember: (id: string) => post<{ ok: true }>('/api/duel/remember', { id }),
+  duelDismiss: () => post<{ ok: true }>('/api/duel/dismiss'),
 };

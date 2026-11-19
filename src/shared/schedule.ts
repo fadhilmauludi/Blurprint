@@ -3,7 +3,7 @@
  * Pure functions only: the server is the single caller that matters, the
  * client never computes a prompt.
  */
-import { DAY_MS, DECOY_SEED_SALT, GUESS_CHOICES, PROMPT_SHUFFLE_SEED, ROLLOVER_UTC_HOUR } from './config';
+import { DAY_MS, DECOY_SEED_SALT, GUESS_CHOICES, MAX_GUESS_CHOICES, PROMPT_SHUFFLE_SEED, ROLLOVER_UTC_HOUR } from './config';
 import { PROMPTS, promptsInGroup, type Prompt } from './prompts';
 import type { Choice, DayIndex } from './types';
 
@@ -66,13 +66,17 @@ export const promptForDay = (day: DayIndex): Prompt => {
 };
 
 /**
- * The 4 choices for guessing day N's blend: the answer + 3 decoys from the same
- * silhouette group, in a seeded order. Same choices and order for every player.
+ * Choices for an answer: the answer + (count − 1) decoys from the same
+ * silhouette group, in an order fixed by `seed`. Same for every player.
  */
-export const choicesForDay = (day: DayIndex): Choice[] => {
-  const answer = promptForDay(day);
-  const rand = mulberry32((Math.imul(day, 0x9e3779b1) ^ DECOY_SEED_SALT) >>> 0);
+export const choicesFor = (answer: Prompt, count: number, seed: number): Choice[] => {
+  const n = Math.max(2, Math.min(MAX_GUESS_CHOICES, Math.trunc(count)));
+  const rand = mulberry32(seed >>> 0);
   const others = promptsInGroup(answer.group).filter((p) => p.id !== answer.id);
-  const decoys = seededShuffle(others, rand).slice(0, GUESS_CHOICES - 1);
+  const decoys = seededShuffle(others, rand).slice(0, n - 1);
   return seededShuffle([answer, ...decoys], rand).map(({ id, word }) => ({ id, word }));
 };
+
+/** Choices for guessing day N's blend (`count` from the difficulty tier). */
+export const choicesForDay = (day: DayIndex, count: number = GUESS_CHOICES): Choice[] =>
+  choicesFor(promptForDay(day), count, (Math.imul(day, 0x9e3779b1) ^ DECOY_SEED_SALT) >>> 0);

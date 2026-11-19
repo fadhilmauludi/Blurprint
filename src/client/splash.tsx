@@ -1,10 +1,12 @@
 import './styles/base.css';
 import './splash.css';
+import './screens/features.css';
 
-import { context, requestExpandedMode } from '@devvit/web/client';
+import { context, getShareData, requestExpandedMode } from '@devvit/web/client';
 import { StrictMode, useEffect, useState, type MouseEvent } from 'react';
 import { createRoot } from 'react-dom/client';
 import { CREDIT } from '../shared/config';
+import { parseDuelShare } from '../shared/duel';
 import type { SplashResponse } from '../shared/types';
 import { api } from './api';
 import { BlendCanvas } from './components/BlendCanvas';
@@ -18,6 +20,7 @@ const dayFromPostData = (): number | null => {
 export const Splash = () => {
   const [data, setData] = useState<SplashResponse | null>(null);
   const [failed, setFailed] = useState(false);
+  const [inviteFrom, setInviteFrom] = useState<string | null>(null);
   const day = data?.postDay ?? dayFromPostData();
 
   useEffect(() => {
@@ -25,11 +28,28 @@ export const Splash = () => {
       if (r.ok) setData(r.data);
       else setFailed(true);
     });
+    // Opened from a duel invite link: remember it server-side for the game view.
+    let shared: string | null;
+    try {
+      shared = parseDuelShare(getShareData());
+    } catch {
+      shared = null;
+    }
+    if (shared) {
+      const id = shared;
+      void api.duel(id).then((r) => {
+        if (!r.ok || r.data.me === 'host') return;
+        setInviteFrom(r.data.host.username);
+        if (context.userId) void api.duelRemember(id);
+      });
+    }
   }, []);
 
   const open = (e: MouseEvent<HTMLButtonElement>) => requestExpandedMode(e.nativeEvent, 'game');
 
-  const label = !data
+  const label = inviteFrom
+    ? '⚔️ Accept the duel'
+    : !data
     ? 'Play'
     : data.isArchive
       ? 'Guess this old blur'
@@ -72,6 +92,7 @@ export const Splash = () => {
             : ' '}
         {data && data.streak > 0 ? <span className="streak-chip"> · 🔥 {data.streak}</span> : null}
       </p>
+      {inviteFrom ? <p className="splash-invite">u/{inviteFrom} challenged you to a duel!</p> : null}
       <button type="button" className="btn btn-primary splash-cta" onClick={open}>
         {label}
       </button>

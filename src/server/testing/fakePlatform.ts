@@ -6,6 +6,7 @@ export type FakePlatform = Platform & {
   flairs: Record<string, string>;
   subscribed: number;
   deletedUsers: Set<string>;
+  published: { channel: string; msg: unknown }[];
 };
 
 export const createFakePlatform = (): FakePlatform => {
@@ -15,6 +16,7 @@ export const createFakePlatform = (): FakePlatform => {
     flairs: {},
     subscribed: 0,
     deletedUsers: new Set(),
+    published: [],
     async createDayPost({ day, title }) {
       const id = `t3_day${day}_${p.posts.length}`;
       p.posts.push({ id, day, title });
@@ -34,6 +36,9 @@ export const createFakePlatform = (): FakePlatform => {
     },
     async userExists(userId) {
       return !p.deletedUsers.has(userId);
+    },
+    async publish(channel, msg) {
+      p.published.push({ channel, msg });
     },
   };
   return p;

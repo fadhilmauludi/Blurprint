@@ -26,11 +26,32 @@ export type UserSummary = {
 
 export type Phase = 'guess' | 'draw' | 'done';
 
-export type GuessPayload = {
-  /** Blend of day postDay − 1. */
-  blend: BlendPayload;
-  choices: Choice[];
+/** What the client needs to show the difficulty and run the focus pull. */
+export type TierInfo = {
+  level: 1 | 2 | 3 | 4;
+  name: string;
+  choices: number;
+  guessSeconds: number;
+  startBlur: number;
+  multiplier: number;
 };
+
+export type GuessPayload = {
+  /**
+   * Blend of day postDay − 1. Before the clock starts `values` is a coarse
+   * teaser (TEASER_BLOCK² averages); after `started` it is the real blend.
+   */
+  blend: BlendPayload;
+  /** null until the player starts the clock. */
+  choices: Choice[] | null;
+  tier: TierInfo;
+  started: boolean;
+  /** Ms left on the guess clock when this payload was built (null before start). */
+  remainingMs: number | null;
+};
+
+export type GuessStartRequest = { day: DayIndex };
+export type GuessStartResponse = { guess: GuessPayload };
 
 export type DrawPayload = {
   promptWord: string;
@@ -53,6 +74,11 @@ export type RevealPayload = {
   syncPct: number | null;
   syncBonus: number;
   pointsEarned: number;
+  /** The clock ran out before an answer. */
+  timedOut: boolean;
+  /** How long the guess took (null when there was no guess). */
+  elapsedMs: number | null;
+  tier: TierInfo | null;
 };
 
 export type LeaderboardEntry = {
@@ -66,8 +92,13 @@ export type LeaderboardPayload = {
   day: DayIndex;
   today: LeaderboardEntry[];
   allTime: LeaderboardEntry[];
+  /** Longest active streaks among players who drew on `day` (score = streak). */
+  streaks: LeaderboardEntry[];
+  /** Top PODIUM_SIZE of day − 1 ("yesterday's winners"). */
+  yesterday: LeaderboardEntry[];
   rankToday: number | null;
   rankAllTime: number | null;
+  rankStreak: number | null;
 };
 
 export type ResultPayload = {
@@ -111,6 +142,10 @@ export type InitResponse = {
   /** Present only when phase = 'done'. */
   result?: ResultPayload;
   nextRolloverUtcMs: number;
+  /** The tier of this post (shown in the top bar). */
+  tier: TierInfo;
+  /** A duel invite this player opened from a shared link (see /api/duel/remember). */
+  pendingDuelId: string | null;
 };
 
 /** Light payload for the inline splash. */
@@ -125,7 +160,8 @@ export type SplashResponse = {
   loggedIn: boolean;
 };
 
-export type GuessRequest = { day: DayIndex; choiceId: string };
+/** choiceId null = the guess clock ran out. */
+export type GuessRequest = { day: DayIndex; choiceId: string | null };
 export type GuessResponse = { reveal: RevealPayload; draw: DrawPayload | null; result: ResultPayload | null };
 
 export type SkipGuessResponse = { draw: DrawPayload | null; reveal: RevealPayload };
@@ -143,8 +179,64 @@ export type ApiErrorCode =
   | 'BAD_INPUT'
   | 'WRONG_PHASE'
   | 'NOT_FOUND'
+  | 'RATE_LIMITED'
   | 'SERVER';
 
 export type ApiError = { error: string; code: ApiErrorCode };
 
 export type ForgetResponse = { ok: true };
+
+// ---------- Duels (D-22) ----------
+
+export type DuelSide = 'host' | 'guest';
+
+/** One player's view of a round: null = not answered yet. */
+export type DuelRoundMark = { correct: boolean; points: number } | null;
+
+export type DuelPlayer = {
+  username: string;
+  score: number;
+  marks: DuelRoundMark[];
+  done: boolean;
+};
+
+export type DuelStatus = 'waiting' | 'playing' | 'finished';
+
+export type DuelView = {
+  id: string;
+  /** Which side the caller is on; null = not in this duel (can join if waiting). */
+  me: DuelSide | null;
+  host: DuelPlayer;
+  guest: DuelPlayer | null;
+  rounds: number;
+  status: DuelStatus;
+  winner: DuelSide | 'tie' | null;
+  /** Index of the caller's next round (= rounds when done). */
+  myNextRound: number;
+  /** A round the caller started and has not answered yet. */
+  openRound: DuelRoundPayload | null;
+};
+
+export type DuelRoundPayload = {
+  duelId: string;
+  round: number;
+  blend: BlendPayload;
+  choices: Choice[];
+  seconds: number;
+  startBlur: number;
+  remainingMs: number;
+};
+
+export type DuelAnswerRequest = { id: string; round: number; choiceId: string | null };
+export type DuelAnswerResponse = {
+  correct: boolean;
+  timedOut: boolean;
+  answerId: string;
+  answerWord: string;
+  points: number;
+  elapsedMs: number;
+  duel: DuelView;
+};
+
+/** Realtime nudge on channel `duel_{id}`: clients refetch the duel on any message. */
+export type DuelNudge = { duelId: string; kind: 'joined' | 'answered' | 'finished' };

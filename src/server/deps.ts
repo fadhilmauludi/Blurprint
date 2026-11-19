@@ -10,6 +10,8 @@ export type Platform = {
   subscribeCurrentUser(): Promise<void>;
   /** false when the account was deleted (Devvit Rules: purge its data). */
   userExists(userId: string): Promise<boolean>;
+  /** Realtime nudge (channel names may not contain ':'). Best effort: callers ignore failures. */
+  publish(channel: string, msg: { [k: string]: string | number | boolean | null }): Promise<void>;
 };
 
 export type Deps = {
@@ -21,9 +23,9 @@ export type Deps = {
 /** The caller, always taken from the Devvit request context — never the body. */
 export type Who = { userId: string | undefined; username: string | undefined };
 
-export type ApiFailCode = 'NOT_LOGGED_IN' | 'ALREADY_DONE' | 'BAD_INPUT' | 'WRONG_PHASE' | 'NOT_FOUND' | 'SERVER';
+export type ApiFailCode = 'NOT_LOGGED_IN' | 'ALREADY_DONE' | 'BAD_INPUT' | 'WRONG_PHASE' | 'NOT_FOUND' | 'RATE_LIMITED' | 'SERVER';
 
-type FailStatus = 400 | 401 | 404 | 409 | 500;
+type FailStatus = 400 | 401 | 404 | 409 | 429 | 500;
 
 const STATUS: Record<ApiFailCode, FailStatus> = {
   NOT_LOGGED_IN: 401,
@@ -31,6 +33,7 @@ const STATUS: Record<ApiFailCode, FailStatus> = {
   BAD_INPUT: 400,
   WRONG_PHASE: 409,
   NOT_FOUND: 404,
+  RATE_LIMITED: 429,
   SERVER: 500,
 };
 
