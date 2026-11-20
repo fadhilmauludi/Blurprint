@@ -101,7 +101,7 @@ export const ResultScreen = ({
   const onJoin = async () => {
     track.cta('subscribe', day);
     const r = await api.subscribe();
-    if (r.ok) {
+    if (r.ok && r.data.joined) {
       setJoined(true);
       showToast({ text: `Joined r/${subredditName} — see you tomorrow!`, appearance: 'success' });
     } else {

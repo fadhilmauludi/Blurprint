@@ -14,6 +14,7 @@ import type {
   DuelRoundPayload,
   DuelView,
   GuessStartResponse,
+  SubscribeResponse,
 } from '../../shared/types';
 import { ApiFail, type Deps, type Who } from '../deps';
 import { getToday } from '../services/dayService';
@@ -157,8 +158,15 @@ export const createApi = (env: RequestEnv): Hono => {
   api.post('/subscribe', async (c) => {
     try {
       if (!env.who().userId) throw new ApiFail('NOT_LOGGED_IN', 'Log in first.');
-      await env.deps.platform.subscribeCurrentUser();
-      return c.json({ ok: true });
+      try {
+        await env.deps.platform.subscribeCurrentUser();
+      } catch (e) {
+        // Reddit grants SUBSCRIBE_TO_SUBREDDIT only to reviewed app versions (playtests are
+        // refused). Expected, so one quiet line; the client opens the subreddit instead.
+        console.warn('subscribe not available:', e instanceof Error ? e.message : String(e));
+        return c.json<SubscribeResponse>({ ok: true, joined: false });
+      }
+      return c.json<SubscribeResponse>({ ok: true, joined: true });
     } catch (e) {
       return fail(c, e);
     }

@@ -16,6 +16,7 @@ import type {
   LeaderboardPayload,
   SkipGuessResponse,
   SplashResponse,
+  SubscribeResponse,
 } from '../shared/types';
 
 export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: ApiError };
@@ -71,7 +72,7 @@ export const api = {
   leaderboard: (day: number) => request<LeaderboardPayload>(`/api/leaderboard?day=${day}`),
   hint: (hint: HintId) => post<{ ok: true }>('/api/hint', { hint }),
   forget: () => post<{ ok: true }>('/api/forget'),
-  subscribe: () => post<{ ok: true }>('/api/subscribe'),
+  subscribe: () => post<SubscribeResponse>('/api/subscribe'),
   commentResult: () => post<CommentResultResponse>('/api/comment-result'),
   duelCreate: () => post<DuelView>('/api/duel/create'),
   duel: (id: string) => request<DuelView>(`/api/duel?id=${encodeURIComponent(id)}`),

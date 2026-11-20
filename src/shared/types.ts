@@ -267,3 +267,6 @@ export type DuelAnswerResponse = {
 
 /** Realtime nudge on channel `duel_{id}`: clients refetch the duel on any message. */
 export type DuelNudge = { duelId: string; kind: 'joined' | 'answered' | 'finished' };
+
+/** POST /api/subscribe. `joined: false` = Reddit refused (unreviewed app); the client opens the subreddit. */
+export type SubscribeResponse = { ok: true; joined: boolean };
