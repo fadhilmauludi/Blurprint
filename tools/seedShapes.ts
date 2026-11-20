@@ -93,3 +93,87 @@ export const makeDrawings = (shape: Shape, count: number, rand: () => number): n
   }
   return out;
 };
+
+const tri =
+  (cx: number, top: number, bottom: number, halfBase: number): Shape =>
+  (x, y) =>
+    y >= top && y <= bottom && Math.abs(x - cx) <= ((y - top) / (bottom - top)) * halfBase;
+const ellipse =
+  (cx: number, cy: number, rx: number, ry: number): Shape =>
+  (x, y) =>
+    ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1;
+const ring = (cx: number, cy: number, r: number, inner: number): Shape => minus(circle(cx, cy, r), circle(cx, cy, inner));
+const arc =
+  (cx: number, cy: number, r: number, inner: number, below: number): Shape =>
+  (x, y) =>
+    y > below && Math.hypot(x - cx, y - cy) <= r && Math.hypot(x - cx, y - cy) >= inner;
+
+/**
+ * More silhouettes (Sprint 7, D-26): one or more per prompt group so duels and
+ * the demo have variety. Appended after SHAPES so the original seed drawings
+ * keep their exact random sequence.
+ */
+export const EXTRA_SHAPES: Record<string, Shape> = {
+  // round
+  donut: ring(0, 0, 0.85, 0.35),
+  flower: union(circle(0, 0, 0.25), ...[0, 1, 2, 3, 4, 5].map((k) => circle(0.55 * Math.cos((k * Math.PI) / 3), 0.55 * Math.sin((k * Math.PI) / 3), 0.3))),
+  // tall-thin
+  candle: union(rect(-0.22, -0.3, 0.22, 1), ellipse(0, -0.62, 0.18, 0.3), rect(-0.03, -0.38, 0.03, -0.3)),
+  tree: union(circle(0, -0.3, 0.62), rect(-0.13, 0.25, 0.13, 1)),
+  rocket: union(ellipse(0, -0.05, 0.3, 0.85), (x, y) => y > 0.35 && y < 0.95 && Math.abs(x) < 0.3 + (y - 0.35) * 0.75),
+  // dome
+  igloo: minus(
+    union(minus(circle(0, 0.45, 0.95), rect(-1.2, 0.45, 1.2, 1.5)), rect(-0.95, 0.35, 0.95, 0.5)),
+    minus(circle(0, 0.5, 0.28), rect(-1, 0.55, 1, 1))
+  ),
+  umbrella: union((x, y) => y <= 0 && x * x + y * y <= 0.81, rect(-0.05, 0, 0.05, 0.8), arc(0.2, 0.8, 0.25, 0.12, 0.8)),
+  mushroom: union((x, y) => y <= 0.05 && ((x / 0.95) ** 2 + ((y + 0.05) / 0.75) ** 2 <= 1), rect(-0.28, 0.05, 0.28, 0.85)),
+  // house
+  house: union(rect(-0.6, 0, 0.6, 0.9), tri(0, -0.85, 0, 0.85)),
+  tent: minus(tri(0, -0.8, 0.9, 0.9), tri(0, 0.3, 0.9, 0.25)),
+  castle: minus(
+    union(rect(-0.8, -0.2, 0.8, 0.9), rect(-0.8, -0.55, -0.5, -0.2), rect(-0.15, -0.55, 0.15, -0.2), rect(0.5, -0.55, 0.8, -0.2)),
+    rect(-0.18, 0.45, 0.18, 0.9)
+  ),
+  // four-legged
+  table: union(rect(-0.95, -0.35, 0.95, -0.15), rect(-0.9, -0.15, -0.75, 0.8), rect(0.75, -0.15, 0.9, 0.8), rect(-0.45, -0.15, -0.32, 0.6), rect(0.32, -0.15, 0.45, 0.6)),
+  cat: union(circle(0, 0.15, 0.62), tri(-0.42, -0.85, -0.2, 0.22), tri(0.42, -0.85, -0.2, 0.22)),
+  // long
+  fish: union(ellipse(-0.15, 0, 0.65, 0.42), (x, y) => x > 0.42 && x < 0.95 && Math.abs(y) < (x - 0.42) * 0.95),
+  car: union(rect(-0.9, -0.1, 0.9, 0.4), rect(-0.45, -0.5, 0.45, -0.1), circle(-0.5, 0.45, 0.22), circle(0.5, 0.45, 0.22)),
+  // heart-drop
+  apple: union(circle(0, 0.15, 0.7), rect(-0.04, -0.78, 0.04, -0.5), circle(0.22, -0.66, 0.14)),
+  balloon: union(ellipse(0, -0.25, 0.6, 0.7), rect(-0.03, 0.45, 0.03, 1)),
+  // spiky
+  star: (x, y) => {
+    const a = Math.atan2(y, x) + Math.PI / 2;
+    return Math.hypot(x, y) <= 0.38 + 0.6 * Math.abs(Math.cos(2.5 * a)) ** 6;
+  },
+  cactus: union(rect(-0.18, -0.9, 0.18, 1), rect(-0.6, -0.2, -0.18, 0.05), rect(-0.6, -0.6, -0.42, -0.2), rect(0.18, 0, 0.6, 0.22), rect(0.42, -0.4, 0.6, 0)),
+  // cup-bowl
+  mug: union(rect(-0.55, -0.6, 0.45, 0.8), ring(0.55, 0.05, 0.35, 0.18)),
+  trophy: union(
+    minus(circle(0, -0.45, 0.55), rect(-1, -1.2, 1, -0.45)),
+    rect(-0.55, -0.85, 0.55, -0.45),
+    ring(-0.6, -0.55, 0.22, 0.1),
+    ring(0.6, -0.55, 0.22, 0.1),
+    rect(-0.1, 0.05, 0.1, 0.55),
+    rect(-0.45, 0.55, 0.45, 0.8)
+  ),
+  // face
+  smiley: union(ring(0, 0, 0.88, 0.7), circle(-0.3, -0.25, 0.12), circle(0.3, -0.25, 0.12), arc(0, 0, 0.5, 0.34, 0.12)),
+  skull: minus(
+    union(circle(0, -0.2, 0.7), rect(-0.4, 0.3, 0.4, 0.75)),
+    union(circle(-0.28, -0.15, 0.17), circle(0.28, -0.15, 0.17), tri(0, 0.1, 0.32, 0.1), rect(-0.06, 0.55, 0.06, 0.75))
+  ),
+  // tool
+  key: union(ring(-0.5, 0, 0.42, 0.18), rect(-0.1, -0.08, 0.95, 0.08), rect(0.6, 0.08, 0.7, 0.32), rect(0.8, 0.08, 0.9, 0.26)),
+  anchor: union(rect(-0.07, -0.7, 0.07, 0.75), ring(0, -0.82, 0.18, 0.08), rect(-0.4, -0.5, 0.4, -0.4), arc(0, 0.1, 0.8, 0.62, 0.2)),
+  // flying
+  kite: union(
+    (x, y) => Math.abs(x) / 0.55 + Math.abs(y + 0.35) / 0.6 <= 1,
+    (x, y) => y > 0.25 && y < 1 && Math.abs(x - 0.18 * Math.sin(y * 9)) < 0.09
+  ),
+  plane: union(rect(-0.1, -0.9, 0.1, 0.9), rect(-0.95, -0.15, 0.95, 0.1), rect(-0.4, 0.65, 0.4, 0.8)),
+  butterfly: union(circle(-0.45, -0.35, 0.4), circle(0.45, -0.35, 0.4), circle(-0.35, 0.4, 0.3), circle(0.35, 0.4, 0.3), rect(-0.06, -0.6, 0.06, 0.7)),
+};

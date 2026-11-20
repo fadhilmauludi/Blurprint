@@ -89,6 +89,19 @@ test (≥ 2 of 3 blends recognised). Record Plan A / B1 / B2 in `docs/DECISIONS.
 | 6f | On real Reddit: share sheet + `getShareData` round trip, realtime between two devices, audio on iOS (silent switch) | 🧑 | ☐ |
 | 6g | Tune tier timings / start blur / duel clocks with playtesters (`DIFFICULTY_TIERS`, `DUEL_ROUNDS`) | 🤖 + 🧑 | ☐ |
 
+## Sprint 7 — Variety, music, polish, reach (added 20 Nov, owner request) · before the freeze
+
+Built with the everything-claude-code skills (TDD workflow: tests first; frontend patterns).
+
+| # | Task | Owner | Status |
+|---|------|-------|--------|
+| 7a | Question formats: Focus pull / Zoom out / Tile reveal rotate daily; duels add Pick the blend. Seed bank 7 → 35 shapes | 🤖 | ✅ D-25, D-26 |
+| 7b | Synthesised background music (calm / tense) + 🎵 toggle | 🤖 | ✅ D-27 |
+| 7c | Visual polish: living background, 3D buttons, entrances, confetti, count-ups, feed splash hook | 🤖 | ✅ D-29 |
+| 7d | Reach: curiosity titles, pinned results thread with yesterday's winners, *Comment as u/name*, share link, `docs/GROWTH.md` | 🤖 | ✅ D-28 |
+| 7e | Make the app account a mod in the home sub (pin needs it); check *Comment as u/name* after app approval | 🧑 | ☐ |
+| 7f | Launch playbook: seed 20 playtesters, r/GamesOnReddit + r/Devvit showcase, mod outreach (`docs/GROWTH.md`) | 🧑 | ☐ |
+
 ### ❄️ Freeze — 6 Dec. Bug fixes only.
 
 ## Sprint 5 — Submission (6–7 Dec) · spec M4

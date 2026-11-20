@@ -15,6 +15,7 @@ import {
   type DifficultyTier,
 } from '../../shared/config';
 import { isLate, tierForDay, timedPoints } from '../../shared/difficulty';
+import { formatForDay } from '../../shared/formats';
 import { bitsToGrid, gridToBits, gridToIndices, indicesToGrid, normalize } from '../../shared/normalize';
 import { choicesForDay, nextRolloverMs, promptForDay } from '../../shared/schedule';
 import { drawDayPoints, milestoneReached, syncBonus } from '../../shared/scoring';
@@ -38,6 +39,8 @@ import { ApiFail, type Deps, type Who } from '../deps';
 import { DRAWING_TIMEOUT, keys } from '../redisKeys';
 import { getBlend, getDayPostId, getPostDay, getToday } from './dayService';
 import { getPendingDuel } from './duelService';
+import { encodeGuess, parseGuess } from './guessRecord';
+import { hasCommented, shareTextFor } from './shareService';
 import { addPoints, getLeaderboard, scoreForDay } from './leaderboardService';
 import { USER_DAY_TTL_SECONDS, getMyCells, getUserState, recordDrawDay, recordStreakBoard, userSummary } from './userService';
 
@@ -70,20 +73,12 @@ export const tierInfo = (t: DifficultyTier): TierInfo => ({
   choices: t.choices,
   guessSeconds: t.guessSeconds,
   startBlur: t.startBlur,
+  startZoom: t.startZoom,
   multiplier: t.multiplier,
 });
 
-type StoredGuess = { pickedId: string | null; correct: boolean; points: number; elapsedMs: number | null };
-
-/** Stored as "{choiceId}|{0|1}|{points}|{elapsedMs}"; choiceId '' = the clock ran out. */
-const encodeGuess = (g: StoredGuess): string => `${g.pickedId ?? ''}|${g.correct ? 1 : 0}|${g.points}|${g.elapsedMs ?? ''}`;
-
-const parseGuess = (raw: string | undefined): StoredGuess | null => {
-  if (raw === undefined || raw === '') return null;
-  const [pickedId, flag, points, elapsed] = raw.split('|');
-  const n = (x: string | undefined) => (x === undefined || x === '' || !Number.isFinite(Number(x)) ? null : Number(x));
-  return { pickedId: pickedId ? pickedId : null, correct: flag === '1', points: n(points) ?? 0, elapsedMs: n(elapsed) };
-};
+/** Same for every player on a day; seeds the tile order and zoom point. */
+const formatSeedFor = (blendDay: DayIndex): number => (Math.imul(blendDay + 1000, 0x9e3779b1) >>> 0) % 1_000_000;
 
 /** The guess screen payload: a coarse teaser before the clock starts, the real blend after. */
 const buildGuessPayload = async (
@@ -101,6 +96,8 @@ const buildGuessPayload = async (
       blend: { ...blend, values: blend.values ? coarsen(blend.values, TEASER_BLOCK, GRID_SIZE) : null },
       choices: null,
       tier: tierInfo(tier),
+      format: formatForDay(postDay),
+      formatSeed: formatSeedFor(blendDay),
       started: false,
       remainingMs: null,
     };
@@ -109,6 +106,8 @@ const buildGuessPayload = async (
     blend,
     choices: choicesForDay(blendDay, tier.choices),
     tier: tierInfo(tier),
+    format: formatForDay(postDay),
+    formatSeed: formatSeedFor(blendDay),
     started: true,
     remainingMs: Math.max(0, tier.guessSeconds * 1000 - (deps.now() - startedAt)),
   };
@@ -179,6 +178,7 @@ const buildReveal = async (
     timedOut: guess !== null && guess.pickedId === null,
     elapsedMs: guess?.elapsedMs ?? null,
     tier: hasBlend ? tierInfo(tier) : null,
+    format: formatForDay(blendDay + 1),
   };
 };
 
@@ -189,14 +189,16 @@ const buildResult = async (
   today: DayIndex,
   streakMilestone: number | null = null
 ): Promise<ResultPayload> => {
-  const [liveBlend, myCells, scoreToday, leaderboard, state] = await Promise.all([
+  const [liveBlend, myCells, scoreToday, leaderboard, state, commented] = await Promise.all([
     getBlend(deps, day),
     getMyCells(deps, day, who.userId),
     scoreForDay(deps, day, who.userId),
     getLeaderboard(deps, day, who.userId),
     who.userId ? getUserState(deps, who.userId) : Promise.resolve(null),
+    hasCommented(deps, day, who.userId),
   ]);
   const summary = state ? userSummary(who, state, today) : null;
+  const drew = myCells !== null && myCells.length > 0;
   return {
     liveBlend,
     myCells: myCells ?? [],
@@ -205,8 +207,10 @@ const buildResult = async (
     bestStreak: summary?.bestStreak ?? 0,
     rankToday: leaderboard.rankToday,
     leaderboard,
-    drew: myCells !== null && myCells.length > 0,
+    drew,
     streakMilestone,
+    shareText: await shareTextFor(deps, who.userId, day, drew, summary?.streak ?? 0),
+    commented,
   };
 };
 
@@ -233,6 +237,7 @@ export const init = async (deps: Deps, who: Who, post: PostRef): Promise<InitRes
     seenHints: state?.seenHints ?? [],
     nextRolloverUtcMs: nextRolloverMs(deps.now()),
     tier: tierInfo(tierForDay(postDay)),
+    format: formatForDay(postDay),
     pendingDuelId,
   };
 

@@ -54,7 +54,9 @@ const harnessApi = (): Plugin => {
           },
           post: () => {
             const day = current.post !== undefined && current.post !== '' ? Number(current.post) : null;
-            return { postId: undefined, postData: { day: day ?? todayCache }, subredditName: 'blurprint_dev' };
+            const d = day ?? todayCache;
+            // Same ids the scenario's fake platform gives day posts (like a real t3 id).
+            return { postId: `harness_day${d}`, postData: { day: d }, subredditName: 'blurprint_dev' };
           },
         })
       );

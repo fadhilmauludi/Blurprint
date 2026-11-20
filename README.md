@@ -10,7 +10,9 @@ Built on **Devvit Web** for Reddit's Game of the Day Hackathon · by XenixWave.
 - **Gets harder:** Warm-up → Tricky → Hard → Expert as the days go by (more choices, less time, bigger multiplier).
 - **Winners boards:** today's scores, 🔥 longest streaks, all-time, and yesterday's podium.
 - **1v1 duels:** challenge a friend through Reddit's share sheet; 5 rounds, each harder, live when you're both online.
-- **Sound:** synthesised effects with a mute toggle.
+- **Four ways to read the blur:** focus pull, zoom out, tile reveal (rotating daily) and, in duels, pick the blend. 35 shapes.
+- **Sound + music:** synthesised effects and a background loop that speeds up when the clock runs (separate toggles).
+- **Made to spread on Reddit:** curiosity titles, a pinned results thread with yesterday's winners, *Comment as u/name*, share link. Launch playbook: `docs/GROWTH.md`.
 
 ## Quick start
 

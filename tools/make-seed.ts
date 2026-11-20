@@ -10,11 +10,13 @@
  */
 import { writeFileSync } from 'node:fs';
 import { mulberry32 } from '../src/shared/schedule';
-import { SHAPES, makeDrawings } from './seedShapes';
+import { EXTRA_SHAPES, SHAPES, makeDrawings } from './seedShapes';
 
 const rand = mulberry32(20261119);
 const prompts: Record<string, number[][]> = {};
 for (const [id, shape] of Object.entries(SHAPES)) prompts[id] = makeDrawings(shape, 18, rand);
+// Appended after the originals so their drawings stay identical.
+for (const [id, shape] of Object.entries(EXTRA_SHAPES)) prompts[id] = makeDrawings(shape, 18, rand);
 
 writeFileSync(
   new URL('../src/server/seed/seed-bank.json', import.meta.url),

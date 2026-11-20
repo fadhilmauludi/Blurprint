@@ -2,6 +2,7 @@ import './styles/base.css';
 import './components/components.css';
 import './screens/screens.css';
 import './screens/features.css';
+import './styles/polish.css';
 
 import { context, getShareData, showLoginPrompt } from '@devvit/web/client';
 import { StrictMode, useCallback, useEffect, useState } from 'react';
@@ -11,6 +12,7 @@ import { parseDuelShare } from '../shared/duel';
 import type { DrawPayload, HintId, InitResponse, ResultPayload, RevealPayload } from '../shared/types';
 import { api } from './api';
 import { sfx } from './audio';
+import { music } from './music';
 import { BlendCanvas } from './components/BlendCanvas';
 import { TopBar } from './components/TopBar';
 import { DrawScreen } from './screens/DrawScreen';
@@ -103,6 +105,19 @@ export const App = () => {
       track.appReady();
     });
   }, [applyInit]);
+
+  // Music may only start inside a user gesture: the first tap anywhere starts it.
+  useEffect(() => {
+    const first = () => music.start();
+    document.addEventListener('pointerdown', first, { once: true });
+    return () => document.removeEventListener('pointerdown', first);
+  }, []);
+
+  // Tense music while a clock runs (the duel screen sets its own mood).
+  const guessRunning = stage === 'guess' && Boolean(init?.guess?.started) && pendingChoice === null;
+  useEffect(() => {
+    if (stage !== 'duel') music.setMood(guessRunning || stage === 'draw' ? 'tense' : 'calm');
+  }, [stage, guessRunning]);
 
   const dismissHint = (hint: HintId) => {
     setSeenHints((s) => [...s, hint]);

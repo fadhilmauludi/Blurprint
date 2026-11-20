@@ -75,6 +75,18 @@ The owner found the guess too easy and asked for audio, a winners leaderboard (s
 
 **D-24 · Winners boards.** Result tabs are now Blend / Today / 🔥 Streaks / All-time. *Streaks* ranks today's artists by their streak (`lb:streak:N`, written when they draw, 30-day TTL). *Today* opens with "Yesterday's winners" (top 3 of `lb:day:N−1`).
 
+### Sprint 7 — variety, music, polish, reach (owner request, 20 Nov; built with the everything-claude-code TDD + frontend-patterns skills)
+
+**D-25 · Question formats.** `src/shared/formats.ts`. The daily puzzle rotates how the blend is revealed: *Focus pull* (Days ≤ 3, then every third day), *Zoom out* (starts zoomed into one patch at `startZoom`× and pulls back), *Tile reveal* (a 4×4 cover; 3 tiles open at the start, the rest flip open ease-in until all are open at the end). Never the same format two days running; all three every three days. Format + seed are chosen by the server and shared by everyone that day. Duels mix all of them plus *Pick the blend* (given the word, choose its blur out of four); round 1 is always a focus pull. Pick-round option ids are opaque (`o0…o3`) and the answer's blend is never sent on its own, so the client can't match the word to an option by id or data.
+
+**D-26 · Seed bank: 7 → 35 shapes.** `tools/seedShapes.ts` (shared by `make-seed` and the demo) gets 28 more silhouettes, at least one per prompt group. New shapes are appended so the original 7 prompts' drawings stay byte-identical (verified). Still placeholder data (D-15); it mainly gives duels and "pick the blend" enough distinct blends. Contact sheet via `npm run gate`.
+
+**D-27 · Background music is synthesised.** `src/client/music.ts`: an A-minor loop (Am–F–C–G) with pad, bass and plucked arpeggio, built from Web Audio oscillators with a look-ahead scheduler. *Tense* mood (guess clock, drawing timer, duel round) raises tempo 84 → 108 BPM, doubles the arpeggio and adds a hi-hat. Starts on the first tap (autoplay rules), pauses when the tab is hidden, own 🎵 toggle (remembered), separate from 🔊 sound effects. No files, no network, nothing AI-generated.
+
+**D-28 · Reach on Reddit.** (a) Daily post titles carry level + format: `Blurprint #12 · Hard · Zoom out — can you read the crowd’s blur?`. (b) Each daily post gets an app-account comment, distinguished and stickied, as the *results thread*, listing yesterday's top 3 by name **without `u/`** (no pings). Pinning is best effort and never blocks the post. (c) *📣 Share → Comment as u/name* replies to that thread **as the user** (`submitComment({ runAs: 'USER' })`, permission `asUser: SUBMIT_COMMENT`), following the Devvit user-action rules: explicit labelled button, exact preview shown, text built server-side from stored results (never from the client), no spoilers, once per day, never required for anything, separate from gameplay. Until Reddit approves the app version, these comments come from the app account (playtest behaviour). (d) *Send the link* uses the share sheet with the same text. Launch playbook in `docs/GROWTH.md`. Push notifications are a gated beta for established games, so they are listed for later rather than built.
+
+**D-29 · Visual polish.** `src/client/styles/polish.css`: drifting blueprint grid (one fixed layer, transform-only), soft glows, 3D press buttons with a shine sweep, staggered screen entrances, choice pop-in, glow on correct / shake on wrong, confetti (canvas, no assets) on correct answers, duel wins and streak milestones, and count-up scores. The feed splash leads with a curiosity hook ("214 people drew the same thing. Can you tell what?"), level + format chips, and an animated "breathing" teaser with a scan line and a faint "?". All motion is off under `prefers-reduced-motion`.
+
 ---
 
 ## Devvit Rules compliance
@@ -86,7 +98,7 @@ The owner found the guess too easy and asked for audio, a winners leaderboard (s
 | Users can remove their own content | "About → Delete my Blurprint data" calls `/api/forget` (same purge, including duels, streak boards and guess clocks). |
 | Auto-deletion ≤ 30 days | All per-user per-day hashes and daily boards expire after 30 days; duels after 7. |
 | Subscribe actions explicit, never gating | "Join r/…" is a separate, labelled button on the result card, never required. Duel invites only open the share sheet when the player taps *Invite a friend*. |
-| No posting/commenting as the user | We don't. "Argue in the comments" only navigates to the post. |
+| Posting/commenting as the user | Only *Comment as u/name* in the Share sheet: explicit, previewed, labelled with the username, a reply to the pinned results thread, once a day, never required (D-28). No posts as the user. |
 | Data minimisation / no PII in telemetry | Only userId/username (for one-per-day and leaderboard display). Telemetry fields contain day numbers and enums only. |
 | No external requests | None (client or server). Realtime is a Devvit plugin; audio is synthesised locally. |
 | No Reddit IP / AI art | All visuals are CSS/canvas; no Snoo, no generated art. |

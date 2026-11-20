@@ -2,6 +2,7 @@ import { showLoginPrompt, showShareSheet, showToast } from '@devvit/web/client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { DUEL_POLL_MS, DUEL_ROUNDS } from '../../shared/config';
 import { duelShareData } from '../../shared/duel';
+import { FORMAT_INFO } from '../../shared/formats';
 import type {
   DuelAnswerResponse,
   DuelPlayer,
@@ -10,8 +11,11 @@ import type {
 } from '../../shared/types';
 import { api } from '../api';
 import { sfx } from '../audio';
+import { music } from '../music';
 import { BlendCanvas } from '../components/BlendCanvas';
 import { ChoiceButtons } from '../components/ChoiceButtons';
+import { Confetti } from '../components/Confetti';
+import { QuestionStage } from '../components/QuestionStage';
 import { TimerBar } from '../components/TimerBar';
 import { useDuelChannel } from '../hooks/useDuelChannel';
 import { usePolling } from '../hooks/usePolling';
@@ -156,6 +160,10 @@ export const DuelScreen = ({ duelId, loggedIn, onExit }: Props) => {
       });
     }
   }, [id, loggedIn, applyView]);
+
+  useEffect(() => {
+    music.setMood(round && !outcome ? 'tense' : 'calm');
+  }, [round, outcome]);
 
   useDuelChannel(id, refresh);
   usePolling(refresh, DUEL_POLL_MS, Boolean(id) && view?.status !== 'finished');
@@ -342,14 +350,18 @@ export const DuelScreen = ({ duelId, loggedIn, onExit }: Props) => {
 
   // ---------- round ----------
   if (round) {
-    const spec = DUEL_ROUNDS[round.round];
     const answered = outcome !== null;
+    const isPick = round.format === 'pick';
+    const info = FORMAT_INFO[round.format];
     return (
       <>
+        <Confetti burstKey={answered && outcome.correct ? `r${round.round}` : null} pieces={40} />
         <div className="duel-round-head">
           <span className="mono">
-            ROUND {round.round + 1}/{view.rounds} · {round.choices.length}{' '}
-            CHOICES
+            ROUND {round.round + 1}/{view.rounds}{' '}
+            <span className="format-chip">
+              <span aria-hidden="true">{info.icon}</span> {info.name}
+            </span>
           </span>
           {opponent ? (
             <Marks
@@ -367,25 +379,41 @@ export const DuelScreen = ({ duelId, loggedIn, onExit }: Props) => {
           onEnd={() => void answer(null)}
           warnAt={3}
         />
+        {isPick ? (
+          <h2 className="heading heading-compact pick-prompt">
+            Which blur is the crowd’s <span className="prompt-word">{round.word}</span>?
+          </h2>
+        ) : null}
         <div className="hero">
           <div className="square">
-            <BlendCanvas
-              key={`b${round.round}`}
-              values={round.blend.values}
-              total={round.blend.total}
-              sharp={answered}
-              focusPull={{
-                seconds: round.seconds,
-                startBlur: spec?.startBlur ?? round.startBlur,
-                remainingMs: round.remainingMs,
-                frozen: pending !== null,
-              }}
-              label={
-                answered
-                  ? `The blend was ${outcome.answerWord}.`
-                  : 'A blurry crowd drawing, slowly sharpening. What is it?'
-              }
-            />
+            {answered && !isPick ? (
+              <BlendCanvas
+                key={`r${round.round}`}
+                values={round.blend.values}
+                total={round.blend.total}
+                sharp
+                label={`The blend was ${outcome.answerWord}.`}
+              />
+            ) : (
+              <QuestionStage
+                key={`q${round.round}`}
+                format={round.format}
+                seed={round.seed}
+                blend={round.blend}
+                seconds={round.seconds}
+                remainingMs={round.remainingMs}
+                frozen={pending !== null || answered}
+                startBlur={round.startBlur}
+                startZoom={round.startZoom}
+                options={round.options}
+                optionChoices={round.choices}
+                onPick={(c) => void answer(c)}
+                answerId={answered ? outcome.answerId : null}
+                pickedId={answered ? picked : null}
+                pendingId={pending}
+                label={`A crowd drawing (${info.name.toLowerCase()}). What is it?`}
+              />
+            )}
           </div>
         </div>
         {answered ? (
@@ -410,15 +438,17 @@ export const DuelScreen = ({ duelId, loggedIn, onExit }: Props) => {
             ) : null}
           </div>
         ) : null}
-        <ChoiceButtons
-          choices={round.choices}
-          onPick={(c) => void answer(c)}
-          disabled={pending !== null}
-          pendingId={pending}
-          answerId={answered ? outcome.answerId : null}
-          pickedId={answered ? picked : null}
-          compact={round.choices.length > 4 || answered}
-        />
+        {isPick ? null : (
+          <ChoiceButtons
+            choices={round.choices}
+            onPick={(c) => void answer(c)}
+            disabled={pending !== null}
+            pendingId={pending}
+            answerId={answered ? outcome.answerId : null}
+            pickedId={answered ? picked : null}
+            compact={round.choices.length > 4 || answered}
+          />
+        )}
         {answered ? (
           <button
             type="button"
@@ -450,6 +480,7 @@ export const DuelScreen = ({ duelId, loggedIn, onExit }: Props) => {
 
   return (
     <>
+      <Confetti burstKey={finished && view.winner === view.me && view.me !== null ? `win${view.id}` : null} pieces={140} />
       <div>
         <h1 className="heading" aria-live="polite">
           {heading}

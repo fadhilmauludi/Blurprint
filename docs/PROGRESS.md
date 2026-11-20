@@ -1,6 +1,6 @@
 # Progress
 
-_Last updated: 19 Nov 2026 (Sprint 0–3 + Sprint 6 code complete; Sprint 4 polish started)._
+_Last updated: 20 Nov 2026 (Sprint 0–3, 6 and 7 code complete; Sprint 4 polish started)._
 Sprint plan: [`SPRINTS.md`](SPRINTS.md) · decisions: [`DECISIONS.md`](DECISIONS.md)
 
 ## Done
@@ -14,13 +14,17 @@ Sprint plan: [`SPRINTS.md`](SPRINTS.md) · decisions: [`DECISIONS.md`](DECISIONS
 
 - **Sprint 6** (owner request: harder, audio, winners board, duels) — difficulty tiers by day, server-timed focus-pull guessing with speed scoring and timeouts, coarse teaser before the clock, 🔥 Streaks board + "Yesterday's winners", 1v1 duels (share-sheet invites, 5 escalating rounds, realtime + polling), synthesised SFX with a mute toggle. 96 tests; Playwright run of every new screen (incl. a full two-player duel and a timeout) — no overflow, no console errors; audio smoke test (sounds fire, mute silences them).
 
+- **Sprint 7** (owner request: more variety, music, nicer UI, reach) — 4 question formats (3 rotate daily, all 4 in duels), 35-shape seed bank, synthesised background music with calm/tense moods, visual polish pass, feed splash hook, curiosity titles, pinned results thread, *Comment as u/name* (user actions), share link, launch playbook (`docs/GROWTH.md`). 121 tests; Playwright: every format, a full duel mixing all four, share/comment flow, music on/off, plus the full earlier regression set — no overflow, no console errors. Standalone demo rebuilt and tested under a strict CSP.
+
 ## Next (needs a human first)
 
 1. 🧑 `npm run login` → create the app at developers.reddit.com/new named **blurprint** (or update `name` in `devvit.json`) → `npm run dev` in a private test subreddit.
 2. 🧑 Check in a real post: splash → expand → guess → draw → result on iOS, Android, desktop.
 3. 🧑 Request **Journeys** map approval (events are already wired).
-4. 🧑 Duels on real Reddit: tap *Invite a friend* on one account, open the shared link on another (check the invite appears on the splash and in the game), play at the same time to see live marks (realtime), and once with one side offline.
-5. 🧑 Collect real seed drawings (set `FEATURES.devTools = true` in a playtest build → "Copy" button on the result card) and replace `src/server/seed/seed-bank.json`; then `npm run gate` + the 2-of-3 recognisability test (26 Nov gate).
+4. 🧑 Make the app account a moderator of the home subreddit (needed to pin the daily post and the results thread). After app approval, check that *Comment as u/name* posts under the player's name (before approval it posts as the app account).
+5. 🧑 Duels on real Reddit: tap *Invite a friend* on one account, open the shared link on another (check the invite appears on the splash and in the game), play at the same time to see live marks (realtime), and once with one side offline.
+6. 🧑 Follow the launch plan in `docs/GROWTH.md`.
+7. 🧑 Collect real seed drawings (set `FEATURES.devTools = true` in a playtest build → "Copy" button on the result card) and replace `src/server/seed/seed-bank.json`; then `npm run gate` + the 2-of-3 recognisability test (26 Nov gate).
 
 ## Known issues / risks
 

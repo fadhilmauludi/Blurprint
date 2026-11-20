@@ -18,10 +18,12 @@ Open today's post and tap **Guess the blur**, then **Start the clock**. Yesterda
 - **Comments:** the result card sends players to argue about the blob in the thread.
 - **Streaks** for drawing every day; boards for today's scores, longest streaks, all-time, and yesterday's winners.
 - **1v1 duels** shared through Reddit's native share sheet (deep-link data), live via Devvit realtime.
+- **A daily results thread**: the app pins a comment with yesterday's winners; players reply with a spoiler-free result card via an explicit *Comment as u/name* button (Devvit user actions).
+- **Four ways to read the blur**: focus pull, zoom out and tile reveal rotate daily; duels add "pick the blend".
 - **Devvit Journeys** telemetry for the guess → draw → result loop.
 - Daily posts are created automatically at 00:00 UTC; old posts stay playable as an archive.
 - Moderator tools: create today's post, hide a day's blend, load seed data.
 
 ## Tech
 
-Devvit Web (interactive post with inline splash + expanded game), React 19 + Vite, Hono server, Devvit Redis (hashes + sorted sets), Devvit scheduler, Devvit realtime, Journeys telemetry. Canvas 2D for drawing and the blend; Web Audio synthesised sound effects. 96 unit/service tests (vitest). No external requests, no AI-generated assets.
+Devvit Web (interactive post with inline splash + expanded game), React 19 + Vite, Hono server, Devvit Redis (hashes + sorted sets), Devvit scheduler, Devvit realtime, Journeys telemetry. Canvas 2D for drawing and the blend; Web Audio synthesised sound effects and background music. 121 unit/service tests (vitest), written test-first. No external requests, no AI-generated assets.

@@ -5,11 +5,14 @@ import type { BlendPayload, LeaderboardPayload, ResultPayload, RevealPayload } f
 import { api } from '../api';
 import { BlendCanvas } from '../components/BlendCanvas';
 import { sfx } from '../audio';
+import { Confetti } from '../components/Confetti';
+import { useCountUp } from '../hooks/useCountUp';
 import { Leaderboard, Podium } from '../components/Leaderboard';
 import { formatCountdown, useNow } from '../hooks/useNow';
 import { usePolling } from '../hooks/usePolling';
 import { track } from '../telemetry';
 import { AboutSheet } from './AboutSheet';
+import { ShareSheet } from './ShareSheet';
 
 type Tab = 'blend' | 'today' | 'streaks' | 'all';
 
@@ -49,7 +52,10 @@ export const ResultScreen = ({
   const [tab, setTab] = useState<Tab>('blend');
   const [joined, setJoined] = useState(false);
   const [about, setAbout] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [commented, setCommented] = useState(result.commented);
   const now = useNow(30_000);
+  const shownScore = useCountUp(result.scoreToday, 900);
 
   useEffect(() => {
     track.resultViewed(day, result.streak, Boolean(reveal?.correct) || result.drew, result.scoreToday);
@@ -113,6 +119,7 @@ export const ResultScreen = ({
 
   return (
     <>
+      <Confetti burstKey={result.streakMilestone} pieces={120} />
       {timedOutNote ? (
         <p className="notice" role="status">
           ⏱ Time’s up — draw a bit more next time!
@@ -159,7 +166,7 @@ export const ResultScreen = ({
       <p className="caption">{caption}</p>
       <div className="stats" role="list">
         <div className="stat" role="listitem">
-          <span className="stat-value mono">{result.scoreToday}</span>
+          <span className="stat-value mono">{shownScore}</span>
           <span className="stat-label">{isArchive ? `Day ${day} score` : 'Score today'}</span>
         </div>
         <div className="stat" role="listitem">
@@ -174,8 +181,17 @@ export const ResultScreen = ({
         </div>
       </div>
       <div className="row cta-row">
-        <button type="button" className="btn btn-primary" onClick={onComment} aria-label="Argue in the comments">
-          💬 Comments
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={() => {
+            track.cta('comment', day);
+            if (result.shareText) setSharing(true);
+            else onComment();
+          }}
+          aria-label="Share your result"
+        >
+          📣 Share
         </button>
         <button type="button" className="btn btn-cyan" onClick={onDuel} aria-label="Duel a friend">
           ⚔️ Duel
@@ -205,6 +221,16 @@ export const ResultScreen = ({
         </button>
       </footer>
       {about ? <AboutSheet onClose={() => setAbout(false)} onForgotten={onForgotten} /> : null}
+      {sharing ? (
+        <ShareSheet
+          text={result.shareText}
+          commented={commented}
+          canComment={!isArchive && result.drew}
+          postUrl={postUrl(subredditName, postId)}
+          onCommented={() => setCommented(true)}
+          onClose={() => setSharing(false)}
+        />
+      ) : null}
     </>
   );
 };

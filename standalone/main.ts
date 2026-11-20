@@ -32,7 +32,7 @@ const api = new Hono().route(
       return demo.deps;
     },
     who: () => ({ userId: context.userId, username: context.username }),
-    post: () => ({ postId: undefined, postData: { day: settings.day }, subredditName: 'blurprint' }),
+    post: () => ({ postId: `demo_day${settings.day}`, postData: { day: settings.day }, subredditName: 'blurprint' }),
   })
 );
 
