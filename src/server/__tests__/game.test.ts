@@ -288,7 +288,7 @@ describe('rollover', () => {
     expect(b.created).toBe(false);
     expect(b.postId).toBe(a.postId);
     expect(platform.posts).toHaveLength(1);
-    expect(platform.posts[0]!.title).toBe('Blurprint #1 — what did the crowd draw?');
+    expect(platform.posts[0]!.title).toBe('Blurprint #1 · Warm-up · Focus pull — can you read the crowd’s blur?');
     expect(await store.get(keys.postDay(a.postId))).toBe('1');
     setDay(2);
     const c = await rollover(deps);

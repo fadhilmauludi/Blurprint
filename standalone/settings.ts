@@ -2,11 +2,12 @@
 export type Player = 'alice' | 'newbie';
 export type DemoSettings = { day: number; player: Player };
 
+/** Demo days whose puzzles have drawings in the seed bank, one per level, covering every format. */
 export const LEVELS: readonly { day: number; label: string }[] = [
-  { day: 2, label: 'Warm-up · Day 2' },
-  { day: 6, label: 'Tricky · Day 6' },
-  { day: 9, label: 'Hard · Day 9' },
-  { day: 16, label: 'Expert · Day 16' },
+  { day: 2, label: 'Warm-up · Focus' },
+  { day: 7, label: 'Tricky · Zoom' },
+  { day: 8, label: 'Hard · Tiles' },
+  { day: 16, label: 'Expert · Zoom' },
 ];
 
 export const readSettings = (): DemoSettings => {

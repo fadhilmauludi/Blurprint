@@ -20,6 +20,11 @@
 | Duel: invite via share sheet → friend opens link → accepts | ☐ | ☐ | ☐ | ☐ | harness ✓ (`?duel=<id>`) |
 | Duel: both online, opponent marks update live | ☐ | ☐ | ☐ | ☐ | realtime not simulated locally |
 | Sound on/off, remembered after reload; iOS silent switch | ☐ | ☐ | ☐ | ☐ | harness ✓ (headless smoke test) |
+| Music: starts on first tap, speeds up on the clock, 🎵 off is silent and remembered | ☐ | ☐ | ☐ | ☐ | harness ✓ (oscillator count) |
+| Zoom out / Tile reveal days readable on a small phone | ☐ | ☐ | — | — | harness ✓ (`reset?today=7` / `8`) |
+| Duel “Pick the blend” round | ☐ | ☐ | ☐ | ☐ | harness ✓ |
+| Daily post pinned results thread with yesterday’s winners | ☐ | | | | needs the app account as mod |
+| Share → Comment as u/name (preview, once a day) | ☐ | ☐ | ☐ | ☐ | harness ✓; real attribution after approval |
 
 ## Local harness
 

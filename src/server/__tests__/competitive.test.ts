@@ -177,11 +177,15 @@ describe('duels', () => {
     const first = await duels.startDuelRound(deps, alice, created.id, 0);
     expect(first.choices).toHaveLength(DUEL_ROUNDS[0]!.choices);
     // Never today's or yesterday's prompt (yesterday's blend is today's puzzle).
-    const meta = JSON.parse((await store.hGet(keys.duel(created.id), 'meta'))!) as { rounds: { answerId: string; choiceIds: string[] }[] };
+    const meta = JSON.parse((await store.hGet(keys.duel(created.id), 'meta'))!) as { rounds: { answerId: string; choiceIds: string[]; format: string; word?: string }[] };
     for (const r of meta.rounds) {
-      expect([promptForDay(1).id, promptForDay(0).id]).not.toContain(r.answerId);
+      const answer = r.format === 'pick' ? r.word : r.answerId;
+      expect([promptForDay(1).id, promptForDay(0).id, promptForDay(1).word, promptForDay(0).word]).not.toContain(answer);
     }
-    expect(meta.rounds.map((r) => r.choiceIds.length)).toEqual(DUEL_ROUNDS.map((s) => s.choices));
+    // Word rounds follow the difficulty table; "pick the blend" rounds always show 4 blends.
+    expect(meta.rounds.map((r) => r.choiceIds.length)).toEqual(
+      DUEL_ROUNDS.map((s, i) => (meta.rounds[i]!.format === 'pick' ? 4 : s.choices))
+    );
     await expectFail(duels.startDuelRound(deps, alice, created.id, 2), 'WRONG_PHASE');
     await duels.answerDuelRound(deps, alice, { id: created.id, round: 0, choiceId: meta.rounds[0]!.answerId });
     await expectFail(

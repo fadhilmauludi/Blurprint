@@ -1,6 +1,7 @@
 import { useSyncExternalStore, type ReactNode } from 'react';
 import type { TierInfo } from '../../shared/types';
 import { sfx } from '../audio';
+import { music } from '../music';
 
 type Props = { day: number; streak?: number | null; tier?: TierInfo | null; right?: ReactNode };
 
@@ -24,6 +25,23 @@ export const MuteButton = () => {
   );
 };
 
+const useMusicOn = (): boolean => useSyncExternalStore(music.subscribe, music.isOn, music.isOn);
+
+export const MusicButton = () => {
+  const on = useMusicOn();
+  return (
+    <button
+      type="button"
+      className={`icon-btn${on ? '' : ' is-off'}`}
+      aria-pressed={on}
+      aria-label={on ? 'Music on. Turn music off' : 'Music off. Turn music on'}
+      onClick={() => music.setOn(!on)}
+    >
+      <span aria-hidden="true">🎵</span>
+    </button>
+  );
+};
+
 export const TierBadge = ({ tier }: { tier: TierInfo }) => (
   <span className={`tier-badge tier-${tier.level}`} title={`Difficulty: ${tier.name}`}>
     <span aria-hidden="true">{'◆'.repeat(tier.level)}</span> {tier.name}
@@ -38,6 +56,7 @@ export const TopBar = ({ day, streak, tier, right }: Props) => (
     </span>
     <span className="topbar-right">
       {right ?? (streak ? <span className="streak-chip" aria-label={`${streak}-day streak`}>🔥 {streak}</span> : null)}
+      <MusicButton />
       <MuteButton />
     </span>
   </header>

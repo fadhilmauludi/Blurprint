@@ -26,6 +26,9 @@ export type UserSummary = {
 
 export type Phase = 'guess' | 'draw' | 'done';
 
+import type { QuestionFormat } from './formats';
+export type { QuestionFormat } from './formats';
+
 /** What the client needs to show the difficulty and run the focus pull. */
 export type TierInfo = {
   level: 1 | 2 | 3 | 4;
@@ -33,6 +36,7 @@ export type TierInfo = {
   choices: number;
   guessSeconds: number;
   startBlur: number;
+  startZoom: number;
   multiplier: number;
 };
 
@@ -45,6 +49,10 @@ export type GuessPayload = {
   /** null until the player starts the clock. */
   choices: Choice[] | null;
   tier: TierInfo;
+  /** How the blend is revealed today (D-25). */
+  format: QuestionFormat;
+  /** Seeds the tile order / zoom point (same for every player). */
+  formatSeed: number;
   started: boolean;
   /** Ms left on the guess clock when this payload was built (null before start). */
   remainingMs: number | null;
@@ -79,6 +87,7 @@ export type RevealPayload = {
   /** How long the guess took (null when there was no guess). */
   elapsedMs: number | null;
   tier: TierInfo | null;
+  format: QuestionFormat;
 };
 
 export type LeaderboardEntry = {
@@ -115,7 +124,13 @@ export type ResultPayload = {
   drew: boolean;
   /** A new milestone was reached with this drawing (3/7/14/30). */
   streakMilestone: number | null;
+  /** Spoiler-free summary for sharing / "comment my result" (built by the server). */
+  shareText: string;
+  /** The player already commented their result today. */
+  commented: boolean;
 };
+
+export type CommentResultResponse = { ok: true; text: string };
 
 export type InitResponse = {
   /** The day this post belongs to. */
@@ -144,6 +159,8 @@ export type InitResponse = {
   nextRolloverUtcMs: number;
   /** The tier of this post (shown in the top bar). */
   tier: TierInfo;
+  /** Today's question format. */
+  format: QuestionFormat;
   /** A duel invite this player opened from a shared link (see /api/duel/remember). */
   pendingDuelId: string | null;
 };
@@ -220,10 +237,20 @@ export type DuelView = {
 export type DuelRoundPayload = {
   duelId: string;
   round: number;
+  format: QuestionFormat;
+  /** Seeds the tile order / zoom point. */
+  seed: number;
+  /** The blend to read (for 'pick': the answer's blend is one of `options`). */
   blend: BlendPayload;
+  /** Word buttons, or for 'pick' one entry per option (opaque ids o0…o3). */
   choices: Choice[];
+  /** 'pick' only: the word to find. */
+  word?: string;
+  /** 'pick' only: the candidate blends. */
+  options?: { id: string; blend: BlendPayload }[];
   seconds: number;
   startBlur: number;
+  startZoom: number;
   remainingMs: number;
 };
 

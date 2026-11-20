@@ -116,7 +116,8 @@ let muted = readMuted();
 const lastPlayed = new Map<Sfx, number>();
 const listeners = new Set<(muted: boolean) => void>();
 
-const ensureContext = (): AudioContext | null => {
+/** The page's one AudioContext (shared with the music engine). Created lazily, inside a user gesture. */
+export const ensureContext = (): AudioContext | null => {
   if (ctx) return ctx;
   const Ctor = globalThis.AudioContext;
   if (typeof Ctor !== 'function') return null;

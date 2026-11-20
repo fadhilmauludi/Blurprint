@@ -2,9 +2,14 @@ import { CREDIT, FEATURES } from '../../shared/config';
 import type { DayIndex } from '../../shared/types';
 import type { Deps } from '../deps';
 import { keys } from '../redisKeys';
+import { tierForDay } from '../../shared/difficulty';
+import { FORMAT_INFO, formatForDay } from '../../shared/formats';
 import { getDayPostId, getToday } from './dayService';
+import { pinResultsThread } from './shareService';
 
-export const dayPostTitle = (day: DayIndex): string => `Blurprint #${day} — what did the crowd draw?`;
+/** Feed hook (D-28): level + today's format, then the question. */
+export const dayPostTitle = (day: DayIndex): string =>
+  `Blurprint #${day} · ${tierForDay(day).name} · ${FORMAT_INFO[formatForDay(day)].name} — can you read the crowd’s blur?`;
 
 const FALLBACK_TEXT =
   'Blurprint is a daily drawing game: guess what the crowd drew from yesterday’s blurry blend, ' +
@@ -36,6 +41,7 @@ export const createDayPost = async (deps: Deps, day: DayIndex): Promise<CreatedP
       deps.store.set(keys.postDay(post.id), String(day)),
     ]);
     if (FEATURES.stickyDailyPost) await rotateSticky(deps, day, post.id);
+    await pinResultsThread(deps, day, post.id);
     console.log(JSON.stringify({ event: 'rollover_ok', day }));
     return { postId: post.id, url: post.url, created: true };
   } catch (e) {

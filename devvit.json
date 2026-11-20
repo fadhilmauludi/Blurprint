@@ -31,7 +31,7 @@
     "realtime": true,
     "reddit": {
       "enable": true,
-      "asUser": ["SUBSCRIBE_TO_SUBREDDIT"]
+      "asUser": ["SUBMIT_COMMENT", "SUBSCRIBE_TO_SUBREDDIT"]
     }
   },
   "scheduler": {

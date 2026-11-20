@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
+import { FORMAT_INFO } from '../../shared/formats';
 import { sfx } from '../audio';
+import { Confetti } from '../components/Confetti';
+import { useCountUp } from '../hooks/useCountUp';
 import type { RevealPayload } from '../../shared/types';
 import { BlendCanvas } from '../components/BlendCanvas';
 import { ChoiceButtons } from '../components/ChoiceButtons';
@@ -12,12 +15,14 @@ type Props = {
 
 export const RevealScreen = ({ reveal, nextLabel, onNext }: Props) => {
   const [sharp, setSharp] = useState(false);
-  const { correct, answerWord, pctCorrect, blend, choices, syncPct, syncBonus, pointsEarned, timedOut, elapsedMs, tier } = reveal;
+  const { correct, answerWord, pctCorrect, blend, choices, syncPct, syncBonus, pointsEarned, timedOut, elapsedMs, tier, format } = reveal;
+  const shownPoints = useCountUp(pointsEarned);
   useEffect(() => {
     sfx.play(correct ? 'correct' : timedOut ? 'timeout' : 'wrong');
   }, [correct, timedOut]);
   return (
     <>
+      <Confetti burstKey={correct ? 'reveal' : null} />
       <div
         className={`banner ${correct ? 'is-correct' : 'is-wrong'} fade-in`}
         role="status"
@@ -29,7 +34,7 @@ export const RevealScreen = ({ reveal, nextLabel, onNext }: Props) => {
           {correct ? 'Nailed it! The crowd drew ' : timedOut ? 'Time’s up! The crowd drew ' : 'Not quite — the crowd drew '}
           <strong className="answer-word">{answerWord}</strong>
         </span>
-        {pointsEarned > 0 ? <span className="points mono">+{pointsEarned}</span> : null}
+        {pointsEarned > 0 ? <span className="points mono">+{shownPoints}</span> : null}
       </div>
       <div className="hero">
         <div className="square">
@@ -49,7 +54,7 @@ export const RevealScreen = ({ reveal, nextLabel, onNext }: Props) => {
       {choices ? <ChoiceButtons choices={choices} answerId={reveal.answerId} pickedId={reveal.pickedId} compact /> : null}
       {elapsedMs !== null && tier ? (
         <p className="reveal-meta mono">
-          {timedOut ? 'No answer in time' : `Answered in ${(elapsedMs / 1000).toFixed(1)} s`} · {tier.name}
+          {timedOut ? 'No answer in time' : `Answered in ${(elapsedMs / 1000).toFixed(1)} s`} · {FORMAT_INFO[format].name} · {tier.name}
           {tier.multiplier !== 1 ? ` ×${tier.multiplier}` : ''}
         </p>
       ) : null}

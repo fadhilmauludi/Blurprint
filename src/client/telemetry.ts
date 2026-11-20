@@ -59,6 +59,7 @@ export const track = {
   cta: (kind: 'comment' | 'subscribe', day: number) =>
     safe(() => telemetry.interaction({ action: `cta_${kind}`, actionDetails: `day:${day}` })),
   streakMilestone: (streak: number) => safe(() => telemetry.interaction({ action: 'streak_milestone', actionDetails: `streak:${streak}` })),
+  share: (kind: 'comment' | 'link' | 'open_comments') => safe(() => telemetry.interaction({ action: `share_${kind}` })),
   guessStarted: (day: number, tier: number) =>
     safe(() => telemetry.interaction({ action: 'guess_started', actionDetails: `day:${day};tier:${tier}` })),
   duel: (kind: 'created' | 'invite_shared' | 'joined' | 'finished', detail = '') =>

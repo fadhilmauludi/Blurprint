@@ -268,3 +268,125 @@
 .heading-compact {
   font-size: clamp(16px, 2.4dvh, 19px);
 }
+
+/* ── Question stages (D-25) ───────────────────────────────────────────── */
+.stage-clip {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: var(--radius);
+}
+.stage-zoom {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+.stage-tiles {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 3px;
+  padding: 3px;
+  pointer-events: none;
+}
+.stage-tile {
+  border-radius: 6px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 60%),
+    repeating-linear-gradient(45deg, #0a347c 0 6px, #0c3a88 6px 12px);
+  border: 1px solid rgba(127, 219, 255, 0.35);
+  transition:
+    transform 380ms var(--ease),
+    opacity 380ms var(--ease);
+}
+.stage-tile.is-open {
+  opacity: 0;
+  transform: rotateY(90deg) scale(0.9);
+}
+.stage-pick {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.pick-option {
+  position: relative;
+  padding: 0;
+  border: 2px solid var(--bp-line);
+  border-radius: var(--radius);
+  background: transparent;
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    transform 90ms var(--ease),
+    border-color 150ms;
+}
+.pick-option:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.pick-option.is-pending {
+  border-color: var(--bp-cyan);
+}
+.pick-option.is-answer {
+  border-color: var(--bp-green);
+  box-shadow: 0 0 0 3px rgba(107, 255, 176, 0.25);
+}
+.pick-option.is-wrong {
+  border-color: var(--bp-red);
+}
+.pick-option .blend-frame {
+  position: absolute;
+  inset: 0;
+}
+.pick-tag {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  min-width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: rgba(7, 42, 102, 0.9);
+  border: 1px solid var(--bp-line);
+  color: var(--bp-ink);
+  font-weight: 700;
+  font-size: 13px;
+}
+.format-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(127, 219, 255, 0.12);
+  border: 1px solid rgba(127, 219, 255, 0.45);
+  color: var(--bp-cyan);
+  font: 700 12px var(--font-mono);
+  letter-spacing: 0.04em;
+}
+.icon-btn.is-off {
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+.topbar-right .icon-btn + .icon-btn {
+  margin-left: -14px;
+}
+
+/* ── Share sheet ──────────────────────────────────────────────────────── */
+.share-preview {
+  margin: 0;
+  padding: 12px;
+  border-radius: var(--radius);
+  background: var(--bp-bg-deep);
+  border: 1px dashed rgba(127, 219, 255, 0.5);
+  white-space: pre-wrap;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.share-note {
+  margin-top: -4px;
+}

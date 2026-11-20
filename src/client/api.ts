@@ -1,6 +1,7 @@
 import type {
   ApiError,
   BlendPayload,
+  CommentResultResponse,
   DrawRequest,
   DuelAnswerRequest,
   DuelAnswerResponse,
@@ -71,6 +72,7 @@ export const api = {
   hint: (hint: HintId) => post<{ ok: true }>('/api/hint', { hint }),
   forget: () => post<{ ok: true }>('/api/forget'),
   subscribe: () => post<{ ok: true }>('/api/subscribe'),
+  commentResult: () => post<CommentResultResponse>('/api/comment-result'),
   duelCreate: () => post<DuelView>('/api/duel/create'),
   duel: (id: string) => request<DuelView>(`/api/duel?id=${encodeURIComponent(id)}`),
   duelMine: () => request<{ duels: DuelView[]; wins: number }>('/api/duel/mine'),

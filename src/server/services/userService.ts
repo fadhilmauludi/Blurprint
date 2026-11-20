@@ -96,6 +96,7 @@ export const forgetUser = async (deps: Deps, userId: string, today: DayIndex): P
       store.hDel(keys.dayDrawings(d), [userId]),
       store.hDel(keys.dayGuesses(d), [userId]),
       store.hDel(keys.dayGuessStarts(d), [userId]),
+      store.hDel(keys.dayCommented(d), [userId]),
       store.zRem(keys.lbStreakDay(d), [userId]),
       store.hDel(keys.daySyncs(d), [userId]),
       store.zRem(keys.lbDay(d), [userId]),

@@ -19,6 +19,7 @@ import {
 } from '../../shared/config';
 import { isLate, timedPoints } from '../../shared/difficulty';
 import { isDuelId } from '../../shared/duel';
+import { duelFormats, type QuestionFormat } from '../../shared/formats';
 import { gridToIndices, indicesToGrid, normalize } from '../../shared/normalize';
 import { getPromptById } from '../../shared/prompts';
 import { choicesFor, mulberry32, promptForDay, seededShuffle } from '../../shared/schedule';
@@ -45,8 +46,20 @@ const POOL_LOOKBACK_DAYS = 30;
 /** Recent duel ids remembered per user (for "delete my data"). */
 const USER_DUELS_KEPT = 12;
 
-/** A round's blend source: a past day ("d:12") or a seed-bank prompt ("s:heart"). */
-type StoredRound = { src: string; answerId: string; choiceIds: string[] };
+/**
+ * A round's blend source is a past day ("d:12") or a seed-bank prompt ("s:heart").
+ * 'pick' rounds store four option sources; their choice ids are opaque (o0…o3)
+ * so the client can't match the given word to an option by id.
+ */
+type StoredRound = {
+  src: string;
+  answerId: string;
+  choiceIds: string[];
+  format: QuestionFormat;
+  seed: number;
+  word?: string;
+  optionSrcs?: string[];
+};
 type StoredPlayer = { userId: string; username: string };
 type StoredAnswer = { choiceId: string | null; correct: boolean; points: number; elapsedMs: number };
 
@@ -94,13 +107,27 @@ const asPlayer = (v: unknown): StoredPlayer | null =>
     ? { userId: v.userId, username: v.username }
     : null;
 
+const FORMATS: readonly QuestionFormat[] = ['focus', 'zoom', 'tiles', 'pick'];
+const strings = (v: unknown): string[] => (Array.isArray(v) ? v.filter((c): c is string => typeof c === 'string') : []);
+
 const asRounds = (v: unknown): StoredRound[] => {
   if (!Array.isArray(v)) return [];
-  return v.flatMap((r) =>
-    isRecord(r) && typeof r.src === 'string' && typeof r.answerId === 'string' && Array.isArray(r.choiceIds)
-      ? [{ src: r.src, answerId: r.answerId, choiceIds: r.choiceIds.filter((c): c is string => typeof c === 'string') }]
-      : []
-  );
+  return v.flatMap((r): StoredRound[] => {
+    if (!isRecord(r) || typeof r.src !== 'string' || typeof r.answerId !== 'string') return [];
+    const format = FORMATS.find((f) => f === r.format) ?? 'focus';
+    const round: StoredRound = {
+      src: r.src,
+      answerId: r.answerId,
+      choiceIds: strings(r.choiceIds),
+      format,
+      seed: typeof r.seed === 'number' ? r.seed : 0,
+    };
+    if (format === 'pick' && typeof r.word === 'string') {
+      round.word = r.word;
+      round.optionSrcs = strings(r.optionSrcs);
+    }
+    return [round];
+  });
 };
 
 const encodeAnswer = (a: StoredAnswer): string => `${a.choiceId ?? ''}|${a.correct ? 1 : 0}|${a.points}|${a.elapsedMs}`;
@@ -258,18 +285,34 @@ export const viewDuel = async (deps: Deps, duel: Duel, userId: string | undefine
   };
 };
 
+const NO_BLEND: BlendPayload = { day: 0, total: 0, values: null, hidden: false };
+
 const roundPayload = async (deps: Deps, duel: Duel, round: number, startedAt: number): Promise<DuelRoundPayload> => {
   const r = duel.rounds[round]!;
   const spec = DUEL_ROUNDS[round] ?? DUEL_ROUNDS[DUEL_ROUNDS.length - 1]!;
-  return {
+  const base = {
     duelId: duel.id,
     round,
-    blend: await roundBlend(deps, r.src),
-    choices: choicesOf(r),
+    format: r.format,
+    seed: r.seed,
     seconds: spec.seconds,
     startBlur: spec.startBlur,
+    startZoom: spec.startZoom,
     remainingMs: Math.max(0, spec.seconds * 1000 - (deps.now() - startedAt)),
   };
+  if (r.format === 'pick' && r.word && r.optionSrcs) {
+    const blends = await Promise.all(r.optionSrcs.map((src) => roundBlend(deps, src)));
+    const options = r.choiceIds.map((id, i) => ({ id, blend: blends[i] ?? NO_BLEND }));
+    return {
+      ...base,
+      // The answer's blend is only ever one of the options, never sent on its own.
+      blend: NO_BLEND,
+      word: r.word,
+      options,
+      choices: options.map((o, i) => ({ id: o.id, word: `Blend ${'ABCD'[i] ?? i + 1}` })),
+    };
+  }
+  return { ...base, blend: await roundBlend(deps, r.src), choices: choicesOf(r) };
 };
 
 // ---------- helpers ----------
@@ -321,11 +364,38 @@ export const createDuel = async (deps: Deps, who: Who): Promise<DuelView> => {
   const pool = await duelPool(deps, today);
   if (pool.length < 3) throw new ApiFail('WRONG_PHASE', 'Not enough past blends for a duel yet. Try again tomorrow!');
   const seed = randomSeed();
-  const picked = seededShuffle(pool, mulberry32(seed)).slice(0, DUEL_ROUNDS.length);
+  const rand = mulberry32(seed);
+  const shuffled = seededShuffle(pool, rand);
+  const picked = shuffled.slice(0, DUEL_ROUNDS.length);
+  // Decoy blends for 'pick' rounds come from the rest of the pool (never another round's answer).
+  const spare = shuffled.slice(DUEL_ROUNDS.length);
+  const formats = duelFormats(seed, picked.length);
   const rounds: StoredRound[] = picked.map((p, i) => {
     const prompt = getPromptById(p.answerId)!;
     const spec = DUEL_ROUNDS[i]!;
-    return { src: p.src, answerId: p.answerId, choiceIds: choicesFor(prompt, spec.choices, seed + i * 7919).map((c) => c.id) };
+    const roundSeed = (seed + i * 7919) >>> 0;
+    if (formats[i] === 'pick' && spare.length >= 3) {
+      const decoys = spare.splice(0, 3);
+      const options = seededShuffle([p, ...decoys], rand);
+      const ids = options.map((_, k) => `o${k}`);
+      return {
+        src: p.src,
+        answerId: ids[options.indexOf(p)]!,
+        choiceIds: ids,
+        format: 'pick',
+        seed: roundSeed,
+        word: prompt.word,
+        optionSrcs: options.map((o) => o.src),
+      };
+    }
+    const format = formats[i] === 'pick' ? 'tiles' : (formats[i] ?? 'focus');
+    return {
+      src: p.src,
+      answerId: p.answerId,
+      choiceIds: choicesFor(prompt, spec.choices, roundSeed).map((c) => c.id),
+      format,
+      seed: roundSeed,
+    };
   });
 
   let id = newId();
@@ -413,8 +483,8 @@ export const answerDuelRound = async (
   const view = await viewDuel(deps, fresh, userId);
   await settleIfFinished(deps, fresh, view);
   await nudge(deps, duel.id, view.status === 'finished' ? 'finished' : 'answered');
-  const answer = getPromptById(r.answerId)!;
-  return { correct, timedOut, answerId: answer.id, answerWord: answer.word, points, elapsedMs, duel: view };
+  const answerWord = r.format === 'pick' ? (r.word ?? '') : (getPromptById(r.answerId)?.word ?? '');
+  return { correct, timedOut, answerId: r.answerId, answerWord, points, elapsedMs, duel: view };
 };
 
 /** The splash saw a duel invite in the share link: hand it to the game view for this user. */

@@ -10,6 +10,10 @@ export type Platform = {
   subscribeCurrentUser(): Promise<void>;
   /** false when the account was deleted (Devvit Rules: purge its data). */
   userExists(userId: string): Promise<boolean>;
+  /** App-account comment on a post, distinguished + stickied (the daily results thread). Returns its id. */
+  pinComment(postId: string, text: string): Promise<string>;
+  /** Comment as the CURRENT user (explicit button only — Devvit user-action rules). Returns its id. */
+  commentAsUser(parentId: string, text: string): Promise<string>;
   /** Realtime nudge (channel names may not contain ':'). Best effort: callers ignore failures. */
   publish(channel: string, msg: { [k: string]: string | number | boolean | null }): Promise<void>;
 };

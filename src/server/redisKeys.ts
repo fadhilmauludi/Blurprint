@@ -32,6 +32,10 @@ export const keys = {
   dayDrawings: (day: DayIndex) => `day:${day}:drawings`,
   /** hash: userId → "{choiceId}|{0|1}". hSetNX = one per day. TTL. Keyed by the BLEND day being guessed. */
   dayGuesses: (day: DayIndex) => `day:${day}:guesses`,
+  /** string: id of the app's pinned "results thread" comment on day N's post. */
+  dayResultsComment: (day: DayIndex) => `day:${day}:resultsComment`,
+  /** hash: userId → id of their "comment my result" reply (one per day). TTL. */
+  dayCommented: (day: DayIndex) => `day:${day}:commented`,
   /** hash: userId → ms the player started the guess clock for the BLEND day. hSetNX. TTL. */
   dayGuessStarts: (day: DayIndex) => `day:${day}:guessStarts`,
   /** hash: total, correct (live guesses only, not archive). */

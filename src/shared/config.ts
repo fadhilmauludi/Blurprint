@@ -42,13 +42,15 @@ export type DifficultyTier = {
   choices: number;
   guessSeconds: number;
   startBlur: number;
+  /** Zoom-out format: how far zoomed in the clock starts. */
+  startZoom: number;
   multiplier: number;
 };
 export const DIFFICULTY_TIERS: readonly DifficultyTier[] = [
-  { level: 1, name: 'Warm-up', fromDay: Number.NEGATIVE_INFINITY, choices: 4, guessSeconds: 20, startBlur: 5, multiplier: 1 },
-  { level: 2, name: 'Tricky', fromDay: 4, choices: 5, guessSeconds: 16, startBlur: 5.5, multiplier: 1.25 },
-  { level: 3, name: 'Hard', fromDay: 8, choices: 6, guessSeconds: 13, startBlur: 6, multiplier: 1.5 },
-  { level: 4, name: 'Expert', fromDay: 15, choices: 6, guessSeconds: 10, startBlur: 6.5, multiplier: 2 },
+  { level: 1, name: 'Warm-up', fromDay: Number.NEGATIVE_INFINITY, choices: 4, guessSeconds: 20, startBlur: 5, startZoom: 2.6, multiplier: 1 },
+  { level: 2, name: 'Tricky', fromDay: 4, choices: 5, guessSeconds: 16, startBlur: 5.5, startZoom: 3, multiplier: 1.25 },
+  { level: 3, name: 'Hard', fromDay: 8, choices: 6, guessSeconds: 13, startBlur: 6, startZoom: 3.4, multiplier: 1.5 },
+  { level: 4, name: 'Expert', fromDay: 15, choices: 6, guessSeconds: 10, startBlur: 6.5, startZoom: 3.8, multiplier: 2 },
 ];
 /** Network allowance on top of the guess clock before a guess counts as timed out. */
 export const GUESS_GRACE_MS = 2500;
@@ -61,13 +63,13 @@ export const TEASER_BLOCK = 2;
  * Duels (D-22): 5 rounds that get harder each round. Blends come from past days
  * (never yesterday's, which is today's daily puzzle) and the seed bank.
  */
-export type DuelRoundSpec = { choices: number; seconds: number; startBlur: number };
+export type DuelRoundSpec = { choices: number; seconds: number; startBlur: number; startZoom: number };
 export const DUEL_ROUNDS: readonly DuelRoundSpec[] = [
-  { choices: 4, seconds: 12, startBlur: 5 },
-  { choices: 4, seconds: 11, startBlur: 5.5 },
-  { choices: 5, seconds: 10, startBlur: 6 },
-  { choices: 6, seconds: 9, startBlur: 6.5 },
-  { choices: 6, seconds: 8, startBlur: 7 },
+  { choices: 4, seconds: 12, startBlur: 5, startZoom: 2.6 },
+  { choices: 4, seconds: 11, startBlur: 5.5, startZoom: 3 },
+  { choices: 5, seconds: 10, startBlur: 6, startZoom: 3.2 },
+  { choices: 6, seconds: 9, startBlur: 6.5, startZoom: 3.5 },
+  { choices: 6, seconds: 8, startBlur: 7, startZoom: 3.8 },
 ];
 /** Points for a correct duel round, before the speed factor. */
 export const DUEL_ROUND_POINTS = 100;

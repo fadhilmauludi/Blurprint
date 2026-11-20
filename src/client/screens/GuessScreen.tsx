@@ -1,9 +1,11 @@
 import { showLoginPrompt } from '@devvit/web/client';
 import { POINTS } from '../../shared/config';
+import { FORMAT_INFO } from '../../shared/formats';
 import type { GuessPayload } from '../../shared/types';
 import { BlendCanvas } from '../components/BlendCanvas';
 import { ChoiceButtons } from '../components/ChoiceButtons';
 import { Hint } from '../components/Hint';
+import { QuestionStage } from '../components/QuestionStage';
 import { TimerBar } from '../components/TimerBar';
 
 type Props = {
@@ -36,7 +38,8 @@ export const GuessScreen = ({
   pendingId,
   error,
 }: Props) => {
-  const { blend, choices, tier, started } = guess;
+  const { blend, choices, tier, started, format, formatSeed } = guess;
+  const info = FORMAT_INFO[format];
   const when = !isArchive ? 'Yesterday' : blend.day <= 0 ? 'Before launch' : `On Day ${blend.day}`;
   const maxPoints = Math.round(POINTS.correctGuess * tier.multiplier);
 
@@ -54,10 +57,13 @@ export const GuessScreen = ({
             {when}, {blend.total} people drew the same thing. What was it?
           </h1>
           <p className="subheading tier-rules">
-            {tier.choices} choices · {tier.guessSeconds} s clock · up to {maxPoints} pts
+            <span className="format-chip">
+              <span aria-hidden="true">{info.icon}</span> {info.name}
+            </span>{' '}
+            {tier.choices} choices · {tier.guessSeconds} s · up to {maxPoints} pts
           </p>
         </div>
-        {showHint ? <Hint text="The blur sharpens while the clock runs. Guess early for more points!" onDismiss={onDismissHint} /> : null}
+        {showHint ? <Hint text={`${info.rule} Guess early for more points!`} onDismiss={onDismissHint} /> : null}
         <div className="hero">
           <div className="square">
             <BlendCanvas
@@ -91,7 +97,12 @@ export const GuessScreen = ({
 
   return (
     <>
-      <h1 className="heading heading-compact">What did {blend.total} people draw?</h1>
+      <h1 className="heading heading-compact">
+        What did {blend.total} people draw?{' '}
+        <span className="format-chip">
+          <span aria-hidden="true">{info.icon}</span> {info.name}
+        </span>
+      </h1>
       <TimerBar
         seconds={tier.guessSeconds}
         remainingMs={guess.remainingMs ?? tier.guessSeconds * 1000}
@@ -101,17 +112,16 @@ export const GuessScreen = ({
       />
       <div className="hero">
         <div className="square">
-          <BlendCanvas
-            values={blend.values}
-            total={blend.total}
-            hidden={blend.hidden}
-            focusPull={{
-              seconds: tier.guessSeconds,
-              startBlur: tier.startBlur,
-              remainingMs: guess.remainingMs ?? tier.guessSeconds * 1000,
-              frozen: pendingId !== null,
-            }}
-            label={`A blurry blend of ${blend.total} drawings, slowly sharpening. Guess what it shows.`}
+          <QuestionStage
+            format={format}
+            seed={formatSeed}
+            blend={blend}
+            seconds={tier.guessSeconds}
+            remainingMs={guess.remainingMs ?? tier.guessSeconds * 1000}
+            frozen={pendingId !== null}
+            startBlur={tier.startBlur}
+            startZoom={tier.startZoom}
+            label={`A blend of ${blend.total} drawings (${info.name.toLowerCase()}). Guess what it shows.`}
           />
         </div>
       </div>

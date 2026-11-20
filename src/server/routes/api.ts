@@ -9,6 +9,7 @@ import type {
   SkipGuessResponse,
   SplashResponse,
   BlendPayload,
+  CommentResultResponse,
   DuelAnswerResponse,
   DuelRoundPayload,
   DuelView,
@@ -20,6 +21,7 @@ import * as duels from '../services/duelService';
 import * as game from '../services/gameService';
 import type { PostRef } from '../services/gameService';
 import { getLeaderboard } from '../services/leaderboardService';
+import { commentResult } from '../services/shareService';
 import { forgetUser, markHintSeen } from '../services/userService';
 import { fail, isRecord, readJson } from './respond';
 
@@ -157,6 +159,15 @@ export const createApi = (env: RequestEnv): Hono => {
       if (!env.who().userId) throw new ApiFail('NOT_LOGGED_IN', 'Log in first.');
       await env.deps.platform.subscribeCurrentUser();
       return c.json({ ok: true });
+    } catch (e) {
+      return fail(c, e);
+    }
+  });
+
+  /** "Comment my result" — explicit button only; posts as the user (Devvit user actions). */
+  api.post('/comment-result', async (c) => {
+    try {
+      return c.json<CommentResultResponse>(await commentResult(env.deps, env.who(), env.post()));
     } catch (e) {
       return fail(c, e);
     }

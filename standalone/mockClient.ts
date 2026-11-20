@@ -34,10 +34,12 @@ export const exitExpandedMode = (): void => undefined;
 export const getWebViewMode = (): 'expanded' => 'expanded';
 export const getShareData = (): string | undefined => undefined;
 
-/** The demo server listens for this to send a computer rival into the duel. */
+/** Duel invites bring in a computer rival (the demo server listens for this); other shares just explain. */
 export const showShareSheet = async (opts: { data?: string }): Promise<void> => {
-  window.dispatchEvent(new CustomEvent('bp-invite', { detail: opts.data ?? '' }));
-  toast('Demo: no friends here, so a computer rival accepts your duel…');
+  if (opts.data) {
+    window.dispatchEvent(new CustomEvent('bp-invite', { detail: opts.data }));
+    toast('Demo: no friends here, so a computer rival accepts your duel…');
+  } else toast('On Reddit this opens the share sheet with your result.');
 };
 
 type Listener = (msg: unknown) => void;
