@@ -22,7 +22,7 @@ Open today's post and tap **Guess the blur**, then **Start the clock**. Yesterda
 - **Four ways to read the blur**: focus pull, zoom out and tile reveal rotate daily; duels add "pick the blend".
 - **Devvit Journeys** telemetry for the guess → draw → result loop.
 - Daily posts are created automatically at 00:00 UTC; old posts stay playable as an archive.
-- Moderator tools: create today's post, hide a day's blend, load seed data.
+- Moderator tools: create today's post, hide a day's blend, remove a single crude drawing (without seeing anyone's drawing), load seed data.
 
 ## Tech
 

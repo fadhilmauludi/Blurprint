@@ -84,8 +84,9 @@ export const forgetUser = async (deps: Deps, userId: string, today: DayIndex): P
   const { store } = deps;
   const lookback = USER_DAY_TTL_DAYS + 2;
   for (let d = today - lookback; d <= today; d++) {
-    const raw = await store.hGet(keys.dayDrawings(d), userId);
-    if (raw !== undefined && raw !== DRAWING_TIMEOUT) {
+    const [raw, removed] = await Promise.all([store.hGet(keys.dayDrawings(d), userId), store.hGet(keys.dayRemoved(d), userId)]);
+    // A drawing a moderator removed is already out of the blend: don't subtract it twice.
+    if (raw !== undefined && raw !== DRAWING_TIMEOUT && removed === undefined) {
       const cells = gridToIndices(bitsToGrid(raw));
       await Promise.all([
         ...cells.map((i) => store.hIncrBy(keys.dayCells(d), String(i), -1)),
@@ -94,6 +95,7 @@ export const forgetUser = async (deps: Deps, userId: string, today: DayIndex): P
     }
     await Promise.all([
       store.hDel(keys.dayDrawings(d), [userId]),
+      store.hDel(keys.dayRemoved(d), [userId]),
       store.hDel(keys.dayGuesses(d), [userId]),
       store.hDel(keys.dayGuessStarts(d), [userId]),
       store.hDel(keys.dayCommented(d), [userId]),

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DAY_MS, GUESS_CHOICES } from '../config';
-import { PROMPTS, PROMPT_GROUPS, getPromptById, promptsInGroup } from '../prompts';
+import { PROMPTS, PROMPT_GROUPS, SEASON_1_SIZE, getPromptById, promptsInGroup } from '../prompts';
 import {
   choicesForDay,
   dayStartMs,
@@ -79,8 +79,10 @@ describe('schedule', () => {
     expect(promptForDay(1).id).toBe(promptForDay(1 + n).id);
   });
   it('works for pre-launch days', () => {
-    expect(promptForDay(0).id).toBe(promptForDay(PROMPTS.length).id);
-    expect(promptForDay(-1).id).toBe(promptForDay(PROMPTS.length - 1).id);
+    // Pre-launch days stay on the last season-1 words (the ones with seed drawings).
+    expect(promptForDay(0).id).toBe(promptForDay(SEASON_1_SIZE).id);
+    expect(promptForDay(-1).id).toBe(promptForDay(SEASON_1_SIZE - 1).id);
+    expect(promptForDay(0).id).toBe('heart');
   });
   it('choices: 4 unique, include the answer, decoys from the same group', () => {
     for (let d = -5; d <= 200; d++) {

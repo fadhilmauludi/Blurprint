@@ -1,5 +1,21 @@
 node_modules
 .DS_Store
 dist
-.envdist-standalone
+dist-standalone
 blurprint-demo.html
+
+# secrets and local data
+.env
+.env.*
+*.pem
+*.key
+*.db
+*.sqlite
+*.sqlite3
+.devvit/
+
+# private: owner's spec and AI assistant instructions
+BLURPRINT_BUILD_SPEC.md
+AGENTS.md
+CLAUDE.md
+.claude/
