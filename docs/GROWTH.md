@@ -64,7 +64,7 @@ is a separate button. No automated posting, no DMs, no voting.
 
 > Hi! I made Blurprint, a 2-minute daily drawing game that runs inside a Reddit post. Everyone draws the same
 > secret word, and tomorrow the community's blurry average becomes the puzzle. It posts once a day, needs no setup,
-> keeps drawings private (only the crowd average is shown), and has mod tools to hide a day's blend. Would you like
+> keeps drawings private (only the crowd average is shown), and has mod tools to hide a day's blend or remove a single crude drawing. Would you like
 > to try it in r/____ for a week? Here's a live one: <link>.
 
 ---

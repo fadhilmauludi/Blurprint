@@ -5,6 +5,7 @@ import type { Deps } from '../deps';
 import { ensureEpoch, getToday, resetEpoch, setHidden } from '../services/dayService';
 import { createDayPost, rollover } from '../services/postService';
 import { sweepDeletedUsers } from '../services/purgeService';
+import { MAX_REMOVE_AT_ONCE, removeOutliers, restoreRemoved } from '../services/moderationService';
 import { loadSeedRange } from '../services/seedService';
 import { SEED_IS_PLACEHOLDER } from '../seed/seedBank';
 import { isRecord, readJson } from './respond';
@@ -91,6 +92,26 @@ export const createInternal = (env: InternalEnv): Hono => {
     });
   });
 
+  internal.post('/menu/remove-drawing', async (c) => {
+    const today = await getToday(deps);
+    return c.json<UiResponse>({
+      showForm: {
+        name: 'removeDrawingForm',
+        form: {
+          title: 'Remove odd-one-out drawings',
+          description:
+            'For a single crude doodle showing in a blend. Removes the drawings least like everyone else’s from that day’s blend. You never see individual drawings, and players keep their streak. Works for about 30 days; tick the box to put removed drawings back.',
+          acceptLabel: 'Apply',
+          fields: [
+            { type: 'number', name: 'day', label: 'Day number (the blend players guess today is yesterday’s)', defaultValue: today - 1, required: true },
+            { type: 'number', name: 'count', label: `How many to remove (1–${MAX_REMOVE_AT_ONCE})`, defaultValue: 1, required: true },
+            { type: 'boolean', name: 'restore', label: 'Put removed drawings back instead', defaultValue: false },
+          ],
+        },
+      },
+    });
+  });
+
   internal.post('/menu/load-seed', async (c) => {
     return c.json<UiResponse>({
       showForm: {
@@ -131,6 +152,26 @@ export const createInternal = (env: InternalEnv): Hono => {
     const hidden = isRecord(body) && body.hidden === true;
     await setHidden(deps, day, hidden);
     return c.json<UiResponse>({ showToast: { text: `Day ${day} blend is now ${hidden ? 'hidden' : 'visible'}`, appearance: 'success' } });
+  });
+
+  internal.post('/form/remove-drawing', async (c) => {
+    const body = await readJson(c);
+    const day = num(isRecord(body) ? body.day : undefined, NaN);
+    const count = num(isRecord(body) ? body.count : undefined, 1);
+    try {
+      if (isRecord(body) && body.restore === true) {
+        const r = await restoreRemoved(deps, day);
+        return c.json<UiResponse>({ showToast: { text: `Day ${day}: put back ${r.restored} drawing(s); blend has ${r.total}.`, appearance: 'success' } });
+      }
+      const r = await removeOutliers(deps, day, count);
+      const text =
+        r.removed === 0
+          ? `Day ${day}: no drawings left to remove (they expire after about 30 days).`
+          : `Day ${day}: removed ${r.removed} drawing(s); blend has ${r.total}.`;
+      return c.json<UiResponse>({ showToast: { text, appearance: r.removed ? 'success' : 'neutral' } });
+    } catch (e) {
+      return c.json<UiResponse>({ showToast: e instanceof Error ? e.message : 'Could not remove drawings.' });
+    }
   });
 
   internal.post('/form/seed', async (c) => {

@@ -16,6 +16,8 @@ Sprint plan: [`SPRINTS.md`](SPRINTS.md) · decisions: [`DECISIONS.md`](DECISIONS
 
 - **Sprint 7** (owner request: more variety, music, nicer UI, reach) — 4 question formats (3 rotate daily, all 4 in duels), 35-shape seed bank, synthesised background music with calm/tense moods, visual polish pass, feed splash hook, curiosity titles, pinned results thread, *Comment as u/name* (user actions), share link, launch playbook (`docs/GROWTH.md`). 121 tests; Playwright: every format, a full duel mixing all four, share/comment flow, music on/off, plus the full earlier regression set — no overflow, no console errors. Standalone demo rebuilt and tested under a strict CSP.
 
+- **Sprint 8** (pre-launch hardening, part 1) — word bank 72 → 167 (season 2, days 1–72 unchanged, D-30); mod tool to remove the odd-one-out drawings from a blend, with undo (D-31). 138 tests; demo rebuilt.
+
 ## Next (needs a human first)
 
 1. 🧑 `npm run login` → create the app at developers.reddit.com/new named **blurprint** (or update `name` in `devvit.json`) → `npm run dev` in a private test subreddit.
@@ -28,7 +30,7 @@ Sprint plan: [`SPRINTS.md`](SPRINTS.md) · decisions: [`DECISIONS.md`](DECISIONS
 
 ## Known issues / risks
 
-- Seed bank is **placeholder** procedural data (see D-15).
+- Seed bank is **placeholder** procedural data (see D-15). It covers 35 of the 167 words; that's fine for daily play (real players draw each day's word), but duels and *Pick the blend* draw only from those 35.
 - `subscribeToCurrentSubreddit` may need app review before it works; the button falls back to navigating to the subreddit.
 - Not yet verified on a real Reddit client: expanded-mode sizing, `navigateTo` to the post's comments, sticky permissions for the app account.
 - Not yet verified on a real Reddit client: `getShareData()` in the expanded `game` entrypoint (the splash → server hand-off covers it if not), realtime delivery, Web Audio on iOS with the silent switch on.

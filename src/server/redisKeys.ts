@@ -28,6 +28,8 @@ export const keys = {
   /** string: "1" if a moderator hid this blend. */
   dayHidden: (day: DayIndex) => `day:${day}:hidden`,
 
+  /** hash: userId → bits of a drawing a moderator took out of the blend (undo + no double subtract). TTL. */
+  dayRemoved: (day: DayIndex) => `day:${day}:removed`,
   /** hash: userId → normalized drawing as GRID² '0'/'1' chars, or "timeout". hSetNX = one per day. TTL. */
   dayDrawings: (day: DayIndex) => `day:${day}:drawings`,
   /** hash: userId → "{choiceId}|{0|1}". hSetNX = one per day. TTL. Keyed by the BLEND day being guessed. */

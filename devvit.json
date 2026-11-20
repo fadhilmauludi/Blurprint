@@ -67,6 +67,13 @@
         "endpoint": "/internal/menu/hide-blend"
       },
       {
+        "label": "Blurprint: remove a crude drawing",
+        "description": "Takes the odd-one-out drawings out of a day's blend",
+        "location": "subreddit",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/remove-drawing"
+      },
+      {
         "label": "Blurprint: load seed data",
         "description": "Seed drawings for pre-launch days",
         "location": "subreddit",
@@ -84,6 +91,7 @@
   },
   "forms": {
     "hideBlendForm": "/internal/form/hide-blend",
+    "removeDrawingForm": "/internal/form/remove-drawing",
     "seedForm": "/internal/form/seed",
     "resetEpochForm": "/internal/form/reset-epoch"
   },

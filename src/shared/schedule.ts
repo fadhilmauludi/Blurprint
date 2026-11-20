@@ -4,7 +4,7 @@
  * client never computes a prompt.
  */
 import { DAY_MS, DECOY_SEED_SALT, GUESS_CHOICES, MAX_GUESS_CHOICES, PROMPT_SHUFFLE_SEED, ROLLOVER_UTC_HOUR } from './config';
-import { PROMPTS, promptsInGroup, type Prompt } from './prompts';
+import { SEASONS, SEASON_1_SIZE, promptsInGroup, type Prompt } from './prompts';
 import type { Choice, DayIndex } from './types';
 
 /** Start of the UTC "game day" (ROLLOVER_UTC_HOUR) that contains `ms`. */
@@ -51,17 +51,25 @@ export const seededShuffle = <T>(items: readonly T[], rand: () => number): T[] =
 };
 
 let shuffledBank: Prompt[] | null = null;
-/** The prompt bank shuffled once with PROMPT_SHUFFLE_SEED. */
+/**
+ * The play order: each season shuffled on its own (season 1 with
+ * PROMPT_SHUFFLE_SEED, exactly as it always was), then concatenated. Adding a
+ * season only appends days; it never moves one already scheduled.
+ */
 export const getShuffledBank = (): Prompt[] => {
-  shuffledBank ??= seededShuffle(PROMPTS, mulberry32(PROMPT_SHUFFLE_SEED));
+  shuffledBank ??= SEASONS.flatMap((season, i) => seededShuffle(season, mulberry32((PROMPT_SHUFFLE_SEED + i * 0x9e37) >>> 0)));
   return shuffledBank;
 };
 
 const mod = (n: number, m: number): number => ((n % m) + m) % m;
 
-/** Prompt for day N. Works for N ≤ 0 too (seeded pre-launch days). */
+/**
+ * Prompt for day N. Pre-launch days (N ≤ 0) count back from the end of
+ * season 1, as they always have: the shipped seed drawings are for those words.
+ */
 export const promptForDay = (day: DayIndex): Prompt => {
   const bank = getShuffledBank();
+  if (day <= 0) return bank[mod(day - 1, SEASON_1_SIZE)]!;
   return bank[mod(day - 1, bank.length)]!;
 };
 
