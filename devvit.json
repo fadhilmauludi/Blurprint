@@ -1,6 +1,6 @@
 {
   "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
-  "name": "blurprint",
+  "name": "blurprint-xenix",
   "post": {
     "dir": "dist/client",
     "entrypoints": {
@@ -81,8 +81,8 @@
         "endpoint": "/internal/menu/load-seed"
       },
       {
-        "label": "Blurprint: reset launch epoch (dev)",
-        "description": "Makes today Day 1 — dev subreddits only",
+        "label": "Blurprint: jump to day (test only)",
+        "description": "Make today any day number — test communities (_dev) only",
         "location": "subreddit",
         "forUserType": "moderator",
         "endpoint": "/internal/menu/reset-epoch"

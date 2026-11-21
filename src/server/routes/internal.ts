@@ -2,7 +2,8 @@ import { Hono } from 'hono';
 import type { TaskResponse } from '@devvit/web/server';
 import type { TriggerResponse, UiResponse } from '@devvit/web/shared';
 import type { Deps } from '../deps';
-import { ensureEpoch, getToday, resetEpoch, setHidden } from '../services/dayService';
+import { ensureEpoch, getToday, setHidden } from '../services/dayService';
+import { MAX_JUMP_DAY, canUseDevTools, jumpToDay } from '../services/devService';
 import { createDayPost, rollover } from '../services/postService';
 import { sweepDeletedUsers } from '../services/purgeService';
 import { MAX_REMOVE_AT_ONCE, removeOutliers, restoreRemoved } from '../services/moderationService';
@@ -130,14 +131,17 @@ export const createInternal = (env: InternalEnv): Hono => {
   });
 
   internal.post('/menu/reset-epoch', async (c) => {
+    if (!canUseDevTools(env.subredditName()))
+      return c.json<UiResponse>({ showToast: 'Jump to day only works in test communities (name ending in _dev).' });
+    const today = await getToday(deps);
     return c.json<UiResponse>({
       showForm: {
         name: 'resetEpochForm',
         form: {
-          title: 'Reset launch epoch (dev only)',
-          description: 'Makes TODAY Day 1. Old day data stays in Redis and may collide with new day numbers. Never use on the demo subreddit.',
-          acceptLabel: 'Reset',
-          fields: [{ type: 'boolean', name: 'confirm', label: 'I understand, reset it', defaultValue: false }],
+          title: 'Jump to day (test community only)',
+          description: `Makes TODAY the day you pick (now Day ${today}), loads stand-in drawings for the day before so there is a blur to guess, and creates the post. Day 1 restarts from Warm-up. Levels: Tricky from Day 4, Hard from Day 8, Expert from Day 15.`,
+          acceptLabel: 'Jump',
+          fields: [{ type: 'number', name: 'day', label: `Make today Day… (1–${MAX_JUMP_DAY})`, defaultValue: 15, required: true }],
         },
       },
     });
@@ -185,10 +189,19 @@ export const createInternal = (env: InternalEnv): Hono => {
   });
 
   internal.post('/form/reset-epoch', async (c) => {
+    if (!canUseDevTools(env.subredditName())) return c.json<UiResponse>({ showToast: 'Only works in test communities.' });
     const body = await readJson(c);
-    if (!isRecord(body) || body.confirm !== true) return c.json<UiResponse>({ showToast: 'Not reset (confirm was off).' });
-    await resetEpoch(deps);
-    return c.json<UiResponse>({ showToast: { text: 'Launch epoch reset: today is Day 1.', appearance: 'success' } });
+    const day = num(isRecord(body) ? body.day : undefined, NaN);
+    try {
+      const r = await jumpToDay(deps, day);
+      const seeded = r.seeded > 0 ? `${r.seeded} stand-in drawings for Day ${day - 1}` : `no stand-in drawings for Day ${day - 1}, so the post opens on drawing`;
+      return c.json<UiResponse>({
+        showToast: { text: `Today is now Day ${r.day} (${seeded}).`, appearance: 'success' },
+        navigateTo: `https://www.reddit.com/r/${env.subredditName()}/comments/${r.postId.replace(/^t3_/, '')}`,
+      });
+    } catch (e) {
+      return c.json<UiResponse>({ showToast: e instanceof Error ? e.message : 'Could not jump.' });
+    }
   });
 
   return internal;

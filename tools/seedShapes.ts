@@ -176,4 +176,15 @@ export const EXTRA_SHAPES: Record<string, Shape> = {
   ),
   plane: union(rect(-0.1, -0.9, 0.1, 0.9), rect(-0.95, -0.15, 0.95, 0.1), rect(-0.4, 0.65, 0.4, 0.8)),
   butterfly: union(circle(-0.45, -0.35, 0.4), circle(0.45, -0.35, 0.4), circle(-0.35, 0.4, 0.3), circle(0.35, 0.4, 0.3), rect(-0.06, -0.6, 0.06, 0.7)),
+  // Appended later (keep at the end so earlier drawings stay identical).
+  // long: an engine with a cab and chimney, then a carriage, on wheels.
+  train: union(
+    rect(-0.95, -0.15, 0.95, 0.35),
+    rect(-0.95, -0.6, -0.45, -0.15),
+    rect(0.25, -0.45, 0.4, -0.15),
+    circle(-0.65, 0.45, 0.17),
+    circle(-0.15, 0.45, 0.17),
+    circle(0.35, 0.45, 0.17),
+    circle(0.8, 0.45, 0.17)
+  ),
 };

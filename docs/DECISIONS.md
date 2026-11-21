@@ -91,6 +91,8 @@ The owner found the guess too easy and asked for audio, a winners leaderboard (s
 
 **D-31 · Removing a single crude drawing.** Mod menu *Blurprint: remove a crude drawing* (`/internal/menu/remove-drawing`, form `removeDrawingForm`). The app ranks the day's stored drawings by *agreement* (the mean share of the other players who filled each of its cells, `src/shared/moderation.ts`) and takes the lowest 1–5 out of the blend: their cells and the day total are decremented, and the bits are parked in `day:N:removed` (same 30-day TTL) for undo and so they're never subtracted twice (`hSetNX`; `forgetUser` skips them). A tick box puts them back. Moderators never see individual drawings (drawings stay private), and the player keeps their streak and still sees what they drew. Works while drawings are stored (~30 days); coordinated shapes are still handled by hiding the blend.
 
+**D-32 · Jump to day (test communities only).** The dev menu item *reset launch epoch* became *Blurprint: jump to day (test only)* (same endpoint/form ids). It makes today any Day N (1–365) by moving the launch epoch back, loads the stand-in drawings for Day N−1 so there is a blur to guess, creates Day N's post and opens it. Day 1 = the old reset. It refuses to run unless the subreddit name ends in `_dev` (Devvit playtest communities), so a real community's day count can't be moved by a misclick. The seed bank gained a *train* shape (appended; earlier drawings byte-identical) because Day 14's word is *train*, which makes Day 15, the first Expert day, playable.
+
 ---
 
 ## Devvit Rules compliance

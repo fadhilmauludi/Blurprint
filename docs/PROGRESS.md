@@ -18,6 +18,8 @@ Sprint plan: [`SPRINTS.md`](SPRINTS.md) · decisions: [`DECISIONS.md`](DECISIONS
 
 - **Sprint 8** (pre-launch hardening, part 1) — word bank 72 → 167 (season 2, days 1–72 unchanged, D-30); mod tool to remove the odd-one-out drawings from a blend, with undo (D-31). 138 tests; demo rebuilt.
 
+- **Playtest on Reddit (owner, 20–21 Nov)** — app `blurprint-xenix` runs in r/blurprint_xenix_dev; daily posts #1 and #2 were created by the scheduler. Fixes from it: the Join button handles Reddit refusing subscribe in playtests quietly; new *jump to day* test tool (D-32).
+
 ## Next (needs a human first)
 
 1. 🧑 `npm run login` → create the app at developers.reddit.com/new named **blurprint** (or update `name` in `devvit.json`) → `npm run dev` in a private test subreddit.

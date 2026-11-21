@@ -20,13 +20,6 @@ export const ensureEpoch = async (deps: Deps): Promise<number> => {
   return epoch;
 };
 
-/** Dev only: make today Day 1 again. */
-export const resetEpoch = async (deps: Deps): Promise<number> => {
-  const epoch = startOfGameDayUtc(deps.now());
-  await deps.store.set(keys.launchEpoch(), String(epoch));
-  return epoch;
-};
-
 export const getToday = async (deps: Deps): Promise<DayIndex> => getDayIndex(deps.now(), await ensureEpoch(deps));
 
 /** The day a post belongs to: Redis mapping first, then the post's postData. */
