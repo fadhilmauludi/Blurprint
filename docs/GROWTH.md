@@ -35,7 +35,7 @@ is a separate button. No automated posting, no DMs, no voting.
 1. **Seed the crowd.** A blend needs ≥ 5 drawings, and it looks best with ≥ 15. Recruit 20 playtesters (team, friends,
    r/playtesters-style communities that allow it) for the first three days so every early visitor meets a
    readable blur.
-2. **Home subreddit ready.** Create r/Blurprint (or similar): banner and icon made from real blend screenshots,
+2. **Home subreddit ready.** Create **r/BlurprintGame** (the public home; r/blurprint_xenix_dev stays the private test community): banner and icon made from real blend screenshots,
    sidebar with "how to play in 3 lines", a rule against posting spoilers in titles, and the app installed so the daily post
    appears at 00:00 UTC. Make the app account a moderator so the daily post and results thread can be pinned.
 3. **Capture assets.** Record a 10-second screen capture of a tile reveal or zoom-out ending in "Nailed it! +130". This

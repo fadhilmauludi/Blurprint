@@ -22,6 +22,7 @@ Sprint plan: [`SPRINTS.md`](SPRINTS.md) · decisions: [`DECISIONS.md`](DECISIONS
 
 ## Next (needs a human first)
 
+0. 🧑 Public home: create **r/BlurprintGame** (Public) → `npm run upload` → install `blurprint-xenix` there from developers.reddit.com/apps → make the app account a moderator. Test community stays r/blurprint_xenix_dev.
 1. 🧑 `npm run login` → create the app at developers.reddit.com/new named **blurprint** (or update `name` in `devvit.json`) → `npm run dev` in a private test subreddit.
 2. 🧑 Check in a real post: splash → expand → guess → draw → result on iOS, Android, desktop.
 3. 🧑 Request **Journeys** map approval (events are already wired).
